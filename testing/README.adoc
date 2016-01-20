@@ -1,0 +1,7 @@
+= Automated Testing
+
+Automated testing plays a critical role in software development and maintainance. OpenResty provides a data-driven test scaffold for writing declarative test cases for NGINX C modules, Lua libraries, and even OpenResty applications. The test cases are written in a specification-like format, which is both intuitive to read and write for humans and also easy to handle for machines. The data-driven approach makes it easy to run the same tests in wildly different ways that can help expose issues in different scenarios or with different kinds of external tools.
+
+This chapter introduces the `Test::Nginx` test scaffold that has been widely used to organize test suites for almost all the OpenResty components, including the `ngx_http_lua` module, most of the `lua-resty-*` Lua libraries, as well as full-blown business applications like CloudFlare's Lua CDN and Lua SSL.
+
+*Keywords:* Testing, Mocking

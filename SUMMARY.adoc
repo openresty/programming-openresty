@@ -1,3 +1,11 @@
-# Summary
+= Summary
 
-* [Introduction](README.adoc)
+. link:README.adoc[Introduction]
+. link:testing/README.adoc[Automated Testing]
+.. link:testing/introduction.adoc[Introduction]
+.. link:testing/test-nginx.adoc[Test::Nginx]
+.. link:testing/test-suite-layout.adoc[Test Suite Layout]
+.. link:testing/test-file-layout.adoc[Test File Layout]
+.. link:testing/testing-modes.adoc[Testing Modes]
+.. link:testing/mocking.adoc[Mocking]
+.. link:testing/advanced-topics.adoc[Advanced Topics]

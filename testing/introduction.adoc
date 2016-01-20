@@ -1,0 +1,23 @@
+== Introduction
+
+OpenResty itself has been relying on automated testing to remain high quality
+over the years. As OpenResty core developers, we embrace the test driven
+development (TDD) process all the time. An excellent result of our TDD
+practices over the years is a huge set of test suites for all the OpenResty
+components. These test suites are so large as a whole, so it is impractcal
+to run all the tests thoroughly on a single machine. A relatively large
+test cluster is often run on Amazon EC2 to run all these tests in all existing
+test modes. Lying at the heart of these test suites is usually the `Test:
+:Nginx` test scaffold module developed by the OpenResty team.
+
+The `Test::Nginx` scaffold provides a generic simple specification language
+for expressing and organizing test cases in an intuitive way. It also provides
+various powerful testing modes or "engines" to run the tests in various
+different ways in the hope of exposing bugs in different settings. It is
+also supported to extend the test specification language to add custom
+abstractions for advanced testing needs, usually found in application-level
+regression testing.
+
+=== Conceptual Roadmap
+
+=== Overview
