@@ -1,3 +1,12 @@
 = Programming OpenResty
 
-This is a book on OpenResty programming.
+This is an official guide on OpenResty programming written by the OpenResty creator.
+This book is still in preparation. Please check back often for updates.
+
+The entire Programming OpenResty book, written by Yichun Zhang, is available
+here. All content is licensed under the link:http://creativecommons.org/licenses/by-nc-sa/3.0/[Creative
+Commons Attribution Non Commercial Share Alike 3.0 license]. You can download
+or browse the rendered book in various different formats on the GitBook
+website below.
+
+https://www.gitbook.com/book/openresty/programming-openresty/
