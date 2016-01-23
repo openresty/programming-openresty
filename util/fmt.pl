@@ -15,7 +15,7 @@ my $changes = 0;
 
 my $res;
 while (<$in>) {
-    if (/^\s|^\s*$/) { # verbatim
+    if (/^\s|^\s*$|^\/\//) { # verbatim
         next;
     }
 
