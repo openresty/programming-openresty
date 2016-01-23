@@ -1,0 +1,19 @@
+== Test::Nginx
+
+`Test::Nginx` is a test caffold that drives test cases written for any code running atop NGINX, and also, naturally, the NGINX core itself. It is written in Perl because of the rich testing facilites and toolchains already accumulated in the Perl world for years. Fortunately, the user does not really need to know Perl for writing test cases atop this scaffold since `Test::Nginx` provides a very simple notation to present the test cases in a specification-like format.
+
+`Test::Nginx` is distributed via link:http://www.cpan.org/[CPAN], the Comprehensive Perl Archive Network, just like most of the other Perl libraries. If you already have `perl` installed in your system (many Linux distributions ship with `perl` by default), then you can install `Test::Nginx` with the following simple command:
+
+[source,bash]
+----
+cpan Test::Nginx
+----
+
+For the first time that the `cpan` utility is run, you may be prompted to configure the `cpan` utility to fit your requirements. If you are unsure about those options, just choose the automatic configuration option (if available) or just accept all the default settings.
+
+`Test::Nginx` provides several different testing classes for different user requirements. The most frequently used one is `Test::Nginx::Socket`. The rest of this chapter will focus on this testing class and its subclasses.
+
+.Another Test::Nginx
+****
+There is actually another different testing scaffold called `Test::Nginx`, created by Maxim Dounin and maintained by the official NGINX team. That testing module is shipped with the official NGINX test suite and has no relationship with our `Test::Nginx` except that both of them are meant to test NGINX related code. The NGINX team's `Test::Nginx` requires the user to directly code in Perl to convey all the test cases, which means that tests written for their `Test::Nginx` are not data driven and requires decent knowledge about Perl programming.
+****
