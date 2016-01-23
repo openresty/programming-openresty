@@ -1,6 +1,7 @@
 == Test::Nginx
 
-`Test::Nginx` is a test caffold that drives test cases written for any
+link:https://metacpan.org/pod/Test::Nginx[Test::Nginx] is a test caffold
+that drives test cases written for any
 code running atop NGINX, and also, naturally, the NGINX core itself. It
 is written in Perl because of the rich testing facilites and toolchains
 already accumulated in the Perl world for years. Fortunately, the user
