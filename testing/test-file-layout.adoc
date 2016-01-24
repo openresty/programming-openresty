@@ -1,7 +1,7 @@
 == Test File Layout
 :special_data_line: __DATA__
 
-Test files usually has a common file extension, `.t`, to distinguish themselves
+Test files usually have a common file extension, `.t`, to distinguish themselves
 from other types of files in the source tree. Each test file is a Perl
 script per se. `Test::Nginx` follows a special design that decomposes each
 test file into two main parts: the first part is a very short prologue
