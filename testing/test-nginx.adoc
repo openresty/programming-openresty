@@ -34,7 +34,8 @@ The rest of this chapter will focus on this testing class and its subclasses.
 
 NOTE: There is actually another different testing scaffold called `Test::Nginx`,
 created by Maxim Dounin and maintained by the official NGINX team. That
-testing module is shipped with the official NGINX test suite and has no
+testing module is shipped with the link:http://hg.nginx.org/nginx-tests/file/tip[official
+NGINX test suite] and has no
 relationship with our `Test::Nginx` except that both of these are meant
 to test NGINX related code. The NGINX team's `Test::Nginx` requires the
 user to directly code in Perl to convey all the test cases, which means
