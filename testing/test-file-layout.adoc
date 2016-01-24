@@ -277,6 +277,35 @@ in the test block.
 As with data sections, the user can also define her own filters, as we
 shall see in a later section.
 
+=== A Complete Example
+
+We can conclude this section by a complete test file example given below,
+with both the prologue part and the data part.
+
+[source,test-base]
+----
+use Test::Nginx::Socket 'no_plan';
+
+run_tests();
+
+__DATA__
+
+=== TEST 1: hello, world
+This is just a simple demonstration of the
+echo directive provided by ngx_http_echo_module.
+--- config
+location = /t {
+    echo "hello, world!";
+}
+--- request
+GET /t
+--- response_body
+hello, world!
+--- error_code: 200
+----
+
+We will see how to actually run this test file in the next section.
+
 NOTE: The test file layout described in this section is exactly the same
 as the test files based on other test frameworks drived from `Test::Base`,
 the superclass of `Test::Nginx::Socket`, except those specialized test
