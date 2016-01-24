@@ -1,9 +1,9 @@
 == Test::Nginx
 
-link:https://metacpan.org/pod/Test::Nginx[Test::Nginx] is a test caffold
+link:https://metacpan.org/pod/Test::Nginx[Test::Nginx] is a test framework
 that drives test cases written for any
 code running atop NGINX, and also, naturally, the NGINX core itself. It
-is written in Perl because of the rich testing facilites and toolchains
+is written in Perl because of the rich testing facilities and toolchain
 already accumulated in the Perl world for years. Fortunately, the user
 does not really need to know Perl for writing test cases atop this scaffold
 since `Test::Nginx` provides a very simple notation to present the test
@@ -17,7 +17,7 @@ of `Test::Base` in the sense of object-oriented programming. This means
 that all the features offered by `Test::Base` is available in `Test::Nginx`
 and `Test::Nginx` just provides handy primitives and notations that simplify
 testing in the NGINX and OpenResty context. The core idea of `Test::Base`
-is so useful that we have been using testing scaffolds baesd on `Test::Base`
+is so useful that we have been using testing scaffolds based on `Test::Base`
 in many different projects even including Haskell programs and Linux kernel
 modules. `Test::Nginx` is such an example we created for the NGINX and
 OpenResty world. Detailed discussion of the `Test::Base` framework itself

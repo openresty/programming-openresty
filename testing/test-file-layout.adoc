@@ -15,13 +15,13 @@ __DATA__
 
 The `perl` interpreter or the `prove` utility stop interpreting the file
 content as Perl source code until they see this special line. Everything
-after this line is treated as *data* in plain text that is manipulatable
+after this line is treated as *data* in plain text that is reachable
 by the Perl code above this line. The most interesting part of each `.t`
 test file is the stuff after this line, i.e., the data part.
 
-NOTE: The sepcial `{special_data_line}` notation is a powerful feature
+NOTE: The special `{special_data_line}` notation is a powerful feature
 of the Perl programming language that allows embedding arbitrary free-text
-data in any Perl script files that are manipulatable by the containing
+data in any Perl script files that can be manipulated by the containing
 Perl scripts themselves. `Test::Nginx` takes advantage of this feature
 to allow data-driven test case specifications in a simple format or language
 that is easily understandable by everyone, even those without any prior
@@ -50,7 +50,7 @@ to run all the test cases defined in the data part of the test file (i.e.,
 the things coming after the `{special_data_line}` line).
 
 There are, however, more complicated prologue parts in many real-world
-test suites. Such prologues usually define some special envirnoment variables
+test suites. Such prologues usually define some special environment variables
 or Perl variables that can be shared and referenced in the test cases defined
 in the "data part", or just call some other Perl functions imported by
 the `Test::Nginx::Socket` module to customize the testing configurations
@@ -64,7 +64,7 @@ This is where test cases reside. It uses a simple specification format
 to express test cases so that the user does not use Perl or any other general-purpose
 languages to present the tests themselves. This special specification format
 is an instance of Domain-Specific Languages (DSL) where the "domain" is
-defined as testing code running upon or insode NGINX. Use of a DSL to present
+defined as testing code running upon or inside NGINX. Use of a DSL to present
 test cases open the door of presenting the test cases as _data_ instead
 of code. This is also why `Test::Nginx` is a data-driven testing framework.
 
@@ -120,7 +120,7 @@ The name of a data section is the word after the line prefix `---`. Spaces
 are allowed though not syntactically required after `---`. We usually use
 a single space between the prefix and the section name for aesthetic considerations
 and we hope that you follow this convention as well. The section names
-usually contain just alphanumeric letters and underscore charaters.
+usually contain just alphanumeric letters and underscore characters.
 
 Section values are specified in two forms. One is all the lines after the
 section name line, before the next section or the next block. The other
@@ -131,7 +131,7 @@ around the colon are always discarded and never count as a part of the
 section value; furthermore, the trailing line-break character in the one-line
 form does not count either.
 
-If no visible values come after the seciton name in either form, then the
+If no visible values come after the section name in either form, then the
 section takes an empty string value, which is still a _defined_ value,
 however. On the other hand, omitting the section name (and value) altogether
 makes that section _undefined_.
@@ -160,7 +160,7 @@ hello, world!
 ----
 
 Here we have two input data sections, `config` and `request`, for specifying
-a custom nginx configuration snippet in the default `server {}` and the
+a custom NGINX configuration snippet in the default `server {}` and the
 HTTP request sent by the test scaffold to the test NGINX server, respectively.
 In addition, we have one output data section, `response_body`, for specifying
 the expected response body output by the test NGINX server. If the actual
@@ -211,7 +211,7 @@ in later sections.
 
 We shall see, in a later section, that the user can define her own data
 sections or extending existing ones by writing a little bit of custom Perl
-code to statisfy her more complicated testing requirements.
+code to satisfy her more complicated testing requirements.
 
 ==== Section Filters
 
@@ -264,7 +264,7 @@ value. The following section demonstrates using the `eval` filter to produce
 "a" x 4096
 ----
 
-The original value of the `response_body` seciton above is a Perl expression
+The original value of the `response_body` section above is a Perl expression
 where the `x` symbol is a Perl operator is used to construct a string that
 repeats the string specified as the left-hand-side N times where N is specified
 by the right-hand-side. The resulting 4096-byte Perl string after evaluating
@@ -307,8 +307,8 @@ hello, world!
 We will see how to actually run this test file in the next section.
 
 NOTE: The test file layout described in this section is exactly the same
-as the test files based on other test frameworks drived from `Test::Base`,
+as the test files based on other test frameworks derived from `Test::Base`,
 the superclass of `Test::Nginx::Socket`, except those specialized test
 sections and specialized Perl functions defined only in `Test::Nginx::Socket`.
-All the `Test::Base` direvatives share the same basic layout and syntax.
+All the `Test::Base` derivatives share the same basic layout and syntax.
 They proudly inherit the same veins of blood.

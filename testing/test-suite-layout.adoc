@@ -11,7 +11,8 @@ By convention, such projects have a `t/` directory at the root of their
 source tree where test files reside in. Each test file contains test cases
 that are closely related in some way and has the file extension `.t` to
 easily identify themselves as "test files". Below is the directory tree
-structure of a real-world test suite inside the link:https://github.com/openresty/headers-more-nginx-module[headers-more-nginx-module]
+structure of a real-world test suite inside the
+link:https://github.com/openresty/headers-more-nginx-module[headers-more-nginx-module]
 project:
 
 ....
@@ -35,7 +36,7 @@ under `t/`. For example, in the link:https://github.com/openresty/lua-nginx-modu
 project, we have sub-directores like `023-rewrite/` and `024-access/` under
 its `t/` directory.
 
-In essense, each `.t` file is a Perl script file runnable by either `perl`
+In essence, each `.t` file is a Perl script file runnable by either `perl`
 or Perl's universal test harness tool named link:http://perldoc.perl.org/prove.html[prove].
 We usually use the
 `prove` command-line utility to run such `.t` files to obtain test results.
@@ -45,5 +46,5 @@ formatted "data" in these `.t` files.
 
 NOTE: The test suite layout convention we use here are also used by the
 Perl community for many years. Because `Test::Nginx` is written in Perl
-and reuses Perl's testing toolchhain, it makes sense for us to simply follow
+and reuses Perl's testing toolchain, it makes sense for us to simply follow
 that convention in the NGINX and OpenResty world as well.
