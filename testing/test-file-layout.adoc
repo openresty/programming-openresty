@@ -304,7 +304,7 @@ hello, world!
 --- error_code: 200
 ----
 
-We will see how to actually run this test file in the next section.
+We will see how to actually run such test files in the next section.
 
 NOTE: The test file layout described in this section is exactly the same
 as the test files based on other test frameworks derived from `Test::Base`,
