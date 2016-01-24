@@ -1,0 +1,269 @@
+== Test File Layout
+:special_data_line: __DATA__
+
+Test files usually has a common file extension, `.t`, to distinguish themselves
+from other types of files in the source tree. Each test file is a Perl
+script per se. `Test::Nginx` follows a special design that decomposes each
+test file into two main parts: the first part is a very short prologue
+that consists of a few lines of Perl code while the second part is a listing
+of the test cases in a special data format. These two parts are separated
+by the following special line
+
+....
+__DATA__
+....
+
+The `perl` interpreter or the `prove` utility stop interpreting the file
+content as Perl source code until they see this special line. Everything
+after this line is treated as *data* in plain text that is manipulatable
+by the Perl code above this line. The most interesting part of each `.t`
+test file is the stuff after this line, i.e., the data part.
+
+NOTE: The sepcial `{special_data_line}` notation is a powerful feature
+of the Perl programming language that allows embedding arbitrary free-text
+data in any Perl script files that are manipulatable by the containing
+Perl scripts themselves. `Test::Nginx` takes advantage of this feature
+to allow data-driven test case specifications in a simple format or language
+that is easily understandable by everyone, even those without any prior
+experiences in Perl programming.
+
+=== The Prologue Part
+
+The first part, i.e., the "prologue" above the `{special_data_line}` line
+is usually just a few lines of Perl code. You do not have to know Perl
+programming to write them down because they are so simple and seldom or
+never change. The simplest Perl code prologue is as follows:
+
+[source,perl,linenums]
+----
+use Test::Nginx::Socket 'no_plan';
+run_tests();
+----
+
+The first line is just loading the Perl module (or class), `Test::Nginx::Socket`
+and passing the option `'no_plan'` to it to disable test plans (we will
+talk more about test plans in later chapters and we do not bother worrying
+about it here). `Test::Nginx::Socket` is one of the most popular class
+in the `Test::Nginx` test framework. The second line just calls the `run_tests`
+Perl function imported automatically from the `Test::Nginx::Socket` module
+to run all the test cases defined in the data part of the test file (i.e.,
+the things coming after the `{special_data_line}` line).
+
+There are, however, more complicated prologue parts in many real-world
+test suites. Such prologues usually define some special envirnoment variables
+or Perl variables that can be shared and referenced in the test cases defined
+in the "data part", or just call some other Perl functions imported by
+the `Test::Nginx::Socket` module to customize the testing configurations
+and behaviors for the current test file. We will return to such fancier
+prologues in later sections. They can be very helpful in some cases.
+
+=== The Data Part
+
+The data part is the most important part of any test files powered by `Test::Nginx`.
+This is where test cases reside. It uses a simple specification format
+to express test cases so that the user does not use Perl or any other general-purpose
+languages to present the tests themselves. This special specification format
+is an instance of Domain-Specific Languages (DSL) where the "domain" is
+defined as testing code running upon or insode NGINX. Use of a DSL to present
+test cases open the door of presenting the test cases as _data_ instead
+of code. This is also why `Test::Nginx` is a data-driven testing framework.
+
+The test case specification in the data part is composed by a series of
+_test blocks_. Each test block usually corresponds to a single test case,
+which has a _title_, an optional _description_, and a series of _data sections_.
+The structure of a test block is described by the following template.
+
+[source,test-base]
+----
+=== title
+optional description
+goes here...
+--- section1
+value1 goes
+here
+--- section2
+value2 is
+here
+--- section3
+value3
+----
+
+==== Block Titles
+
+As we can see, each test block starts with a title line prefixed by three
+equal sign (`===`). It is important to _avoid_ any leading spaces at the
+beginning of the line. The title is mandatory and is important to describe
+the intention of the current test case in the most concise form, and also
+to identify the test block in the test report when test failures happen.
+By convention we put a `TEST N:` prefix in this title, for instance, `TEST
+3: test the simplest form`. Don't worry about maintaining the test ordinal
+numbers in these titles yourself, we will introduce a command-line utility
+called link:https://raw.githubusercontent.com/agentzh/old-openresty/master/bin/reindex[reindex]
+in a later section that can automatically update the ordinal numbers in
+the block titles for you.
+
+==== Block Descriptions
+
+Each test block can carry an optional description right after the block
+title line. This description can span multiple lines if needed. It is a
+more detailed description of the intention of the test block than the block
+title and may also give some background information about the current test.
+Many test cases just omit this part for convenience.
+
+==== Data Sections
+
+Every test block carries one or more _data sections_ right after the block
+description (if any). Data sections always have a name and a value, which
+specify any input data fields and the _expected_ output data fields.
+
+The name of a data section is the word after the line prefix `---`. Spaces
+are allowed though not syntactically required after `---`. We usually use
+a single space between the prefix and the section name for aesthetic considerations
+and we hope that you follow this convention as well. The section names
+usually contain just alphanumeric letters and underscore charaters.
+
+Section values are specified in two forms. One is all the lines after the
+section name line, before the next section or the next block. The other
+form is more concise and specifies the value directly on the same line
+as the section name, but right after the first colon character (`:`). The
+latter form requires that the value contains no line-breaks. Any spaces
+around the colon are always discarded and never count as a part of the
+section value; furthermore, the trailing line-break character in the one-line
+form does not count either.
+
+`Test::Nginx` offers various pre-defined data section names that can be
+used in the test blocks for different purposes. Some data sections are
+for specifying input data, some are for expected output, and some for controlling
+whether the current test block should be run at all.
+
+It is best to explain data sections in a concrete test block example.
+
+[source,test-base]
+----
+=== TEST 1: hello, world
+This is just a simple demonstration of the
+echo directive provided by ngx_http_echo_module.
+--- config
+location = /t {
+    echo "hello, world!";
+}
+--- request
+GET /t
+--- response_body
+hello, world!
+--- error_code: 200
+----
+
+Here we have two input data sections, `config` and `request`, for specifying
+a custom nginx configuration snippet in the default `server {}` and the
+HTTP request sent by the test scaffold to the test NGINX server, respectively.
+In addition, we have one output data section, `response_body`, for specifying
+the expected response body output by the test NGINX server. If the actual
+response body data is different from what we specify under the `response_body`
+section, this test case fails. We have another output data section, `error_code`,
+which specifies its value on the same line of the section name. We see
+that a colon character is used to separate the section name and values.
+Obviously, the `error_code` section specifies the expected HTTP response
+status code, which is 200.
+
+Empty lines around data sections are always discarded by `Test::Nginx::Socket`.
+Thus the test block above can be rewritten as below without changing its
+meaning:
+
+[source,test-base]
+----
+=== TEST 1: hello, world
+This is just a simple demonstration of the
+echo directive provided by ngx_http_echo_module.
+
+--- config
+location = /t {
+    echo "hello, world!";
+}
+
+--- request
+GET /t
+
+--- response_body
+hello, world!
+
+--- error_code: 200
+----
+
+Some users prefer this style for aesthetic reasons. We are free to choose
+whatever form you like.
+
+We shall see, in a later section, that the user can define her own data
+sections or extending existing ones by writing a little bit of custom Perl
+code to statisfy her more complicated testing requirements.
+
+==== Section Filters
+
+Data sections can take one or more _filters_. Filters are handy when you
+want to adjust or convert the section values in certain ways.
+
+Syntactically, filters are specified right after the section name with
+at least one space character as the separator. Multiple filters are also
+separated by spaces and are applied in the order they are written.
+
+`Test::Nginx::Socket` provides many filters for your convenience. Consider
+the following data section from the aforementioned test block.
+
+[source,test-base]
+----
+--- error_code: 200
+----
+
+If we want to place the section value, 200, in a separate line, like below,
+
+[source,test-base]
+----
+--- error_code
+200
+----
+
+then the section value would contain a trailing new line, which leads to
+a test failure. This is because the one-line form always excludes the trailing
+new-line character while the multi-line form always includes one. To explicitly
+exclude the trailing new-line in the multi-line form, we can employ the
+`chomp` filter, as in
+
+[source,test-base]
+----
+--- error_code chomp
+200
+----
+
+Now it has exactly the same semantics as the previous one-line form.
+
+Some filters have more dramatic effect on the section values. For instance,
+the `eval` filter evaluates the section value as arbitrary Perl code, and
+the Perl value resulted from the execution will be used as the final section
+value. The following section demonstrates using the `eval` filter to produce
+4096 a's:
+
+[source,test-base]
+----
+--- response_body eval
+"a" x 4096
+----
+
+The original value of the `response_body` seciton above is a Perl expression
+where the `x` symbol is a Perl operator is used to construct a string that
+repeats the string specified as the left-hand-side N times where N is specified
+by the right-hand-side. The resulting 4096-byte Perl string after evaluating
+this expression dictated by the `eval` filter will be used as the final
+section value for comparison with the actual response body data. It is
+obvious that use of the `eval` filter and a Perl expression here is much
+more readable and manageable by directly pasting that 4096-byte string
+in the test block.
+
+As with data sections, the user can also define her own filters, as we
+shall see in a later section.
+
+NOTE: The test file layout described in this section is exactly the same
+as the test files based on other test frameworks drived from `Test::Base`,
+the superclass of `Test::Nginx::Socket`, except those specialized test
+sections and specialized Perl functions defined only in `Test::Nginx::Socket`.
+All the `Test::Base` direvatives share the same basic layout and syntax.
+They proudly inherit the same veins of blood.
