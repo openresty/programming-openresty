@@ -131,6 +131,11 @@ around the colon are always discarded and never count as a part of the
 section value; furthermore, the trailing line-break character in the one-line
 form does not count either.
 
+If no visible values come after the seciton name in either form, then the
+section takes an empty string value, which is still a _defined_ value,
+however. On the other hand, omitting the section name (and value) altogether
+makes that section _undefined_.
+
 `Test::Nginx` offers various pre-defined data section names that can be
 used in the test blocks for different purposes. Some data sections are
 for specifying input data, some are for expected output, and some for controlling
@@ -168,7 +173,7 @@ status code, which is 200.
 
 Empty lines around data sections are always discarded by `Test::Nginx::Socket`.
 Thus the test block above can be rewritten as below without changing its
-meaning:
+meaning.
 
 [source,test-base]
 ----
@@ -192,6 +197,17 @@ hello, world!
 
 Some users prefer this style for aesthetic reasons. We are free to choose
 whatever form you like.
+
+There are also some special data sections that specify neither input nor
+output. They are just used to _control_ how test blocks are run. For example,
+the `ONLY` section makes _only_ the current test block in the current test
+file run and all the other test blocks are skipped. This is extremely useful
+for running an individual test block in any given file, which is a common
+requirement while debugging a particular test failure. Also, the special
+`SKIP` section can skip running the containing test block unconditionally,
+handy for preparing test cases for future features without introducing
+any expected test failures. We will visit more such "control sections"
+in later sections.
 
 We shall see, in a later section, that the user can define her own data
 sections or extending existing ones by writing a little bit of custom Perl
