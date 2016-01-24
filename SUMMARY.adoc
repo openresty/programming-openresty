@@ -9,4 +9,5 @@
 .. link:testing/running-tests.adoc[Running Tests]
 .. link:testing/testing-modes.adoc[Testing Modes]
 .. link:testing/mocking.adoc[Mocking]
+.. link:testing/test-cluster.adoc[Test Cluster]
 .. link:testing/advanced-topics.adoc[Advanced Topics]
