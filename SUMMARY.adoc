@@ -7,6 +7,7 @@
 .. link:testing/test-suite-layout.adoc[Test Suite Layout]
 .. link:testing/test-file-layout.adoc[Test File Layout]
 .. link:testing/running-tests.adoc[Running Tests]
+.. link:testing/writing-tests.adoc[Writing Tests]
 .. link:testing/testing-modes.adoc[Testing Modes]
 .. link:testing/mocking.adoc[Mocking]
 .. link:testing/test-cluster.adoc[Test Cluster]
