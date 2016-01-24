@@ -9,6 +9,21 @@ does not really need to know Perl for writing test cases atop this scaffold
 since `Test::Nginx` provides a very simple notation to present the test
 cases in a specification-like format.
 
+The simple test specification format, or language, used in `Test::Nginx`
+is just a dialect of the more general testing language provided by the
+link:https://metacpan.org/pod/distribution/Test-Base/lib/Test/Base.pod[Test::Base]
+testing module in the Perl world. In fact, `Test::Nginx` is just a subclass
+of `Test::Base` in the sense of object-oriented programming. This means
+that all the features offered by `Test::Base` is available in `Test::Nginx`
+and `Test::Nginx` just provides handy primitives and notations that simplify
+testing in the NGINX and OpenResty context. The core idea of `Test::Base`
+is so useful that we have been using testing scaffolds baesd on `Test::Base`
+in many different projects even including Haskell programs and Linux kernel
+modules. `Test::Nginx` is such an example we created for the NGINX and
+OpenResty world. Detailed discussion of the `Test::Base` framework itself
+is beyond the scope of this book, but we will introduce the important features
+of `Test::Base` that are inherited by `Test::Nginx` in the later sections.
+
 `Test::Nginx` is distributed via link:http://www.cpan.org/[CPAN], the Comprehensive
 Perl Archive Network, just like most of the other Perl libraries. If you
 already have `perl` installed in your system (many Linux distributions
