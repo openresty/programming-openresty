@@ -1,0 +1,290 @@
+== Running Tests
+
+Like most Perl-based testing frameworks, `Test:Nginx` requires Perl's `prove`
+command-line utility to run the test files. The `prove` utility is usually
+shipped with the standard perl distribution so we should already have it
+when we have `perl` installed.
+
+`Test::Nginx` always invokes a real NGINX server and a real socket client
+to run the tests. It automatically uses the `nginx` program found in the
+system environment `PATH`. It is your responsibility to specify the right
+`nginx` in your `PATH` environment for the test suite. Usually we just
+specify the path of the `nginx` program inside the `OpenResty` installation
+tree. For example,
+
+[source,bash]
+----
+export PATH=/usr/local/openresty/nginx/sbin:$PATH
+----
+
+Here we assume that OpenResty is installed to the default prefix, i.e.,
+`/usr/local/openresty/`.
+
+You can always use the `which` command to verify if the `PATH` environment
+is indeed set properly:
+
+[source,console]
+----
+$ which nginx
+/usr/local/openresty/nginx/sbin/nginx
+----
+
+For convenience, we usually wrap such environment settings in a custom
+shell script so that we do not risk polluting the system-wide or account-wide
+environment settings nor take on the burden of manually setting the environments
+manually for every shell session. For example, I usually have a local bash
+script named `go` in each project I work on. A typical `go` script might
+look like below
+
+[source,bash]
+----
+#!/usr/bin/env bash
+
+export PATH=/usr/local/openresty/nginx/sbin:$PATH
+
+exec prove "$@"
+----
+
+Then we can use this `./go` script to substitute the `prove` utility in
+any of the subsequent commands involving `prove`.
+
+Because `Test::Nginx` makes heavy use of environment variables for the
+callers to fine tune the testing behaviors (as we shall see in later sections),
+such shell wrapper scripts also make it easy to manage all these environment
+variable settings and hard to get things wrong.
+
+NOTE: Please do not confuse the name of this bash script with Google's
+Go programming language. It has nothing to do with the Go language in any
+way.
+
+=== Running A Single File
+
+If you want to run a single test file, say, `t/foo.t`, then all you need
+to do is just typing the following command in your terminal.
+
+[source,bash]
+----
+prove t/foo.t
+----
+
+Here inside `t/foo.t` we employs the simple test file example presented
+in the previous section. We repeat the content below for the reader's convenience.
+
+[source,test-base]
+.t/foo.t
+----
+use Test::Nginx::Socket 'no_plan';
+
+run_tests();
+
+__DATA__
+
+=== TEST 1: hello, world
+This is just a simple demonstration of the
+echo directive provided by ngx_http_echo_module.
+--- config
+location = /t {
+    echo "hello, world!";
+}
+--- request
+GET /t
+--- response_body
+hello, world!
+--- error_code: 200
+----
+
+It is worth mentioning that we could run the following command instead
+if we have a custom wrapper script called `./go` for `prove` (as mentioned
+earlier in this section):
+
+[source,bash]
+----
+./go foo.t
+----
+
+When everything goes well, it generates an output like this:
+
+....
+t/foo.t .. ok
+All tests successful.
+Files=1, Tests=2, 0 wallclock secs (0.02 usr 0.01 sys + 0.08 cusr 0.03 csys = 0.14 CPU)
+Result: PASS
+....
+
+This is a very concise summary. The first line tells you all tests were
+passed while the second line gives you a summary of the number of test
+files (1 in this case), the number of tests (2 in this case), and the wallclock
+and CPU times used to run all the tests.
+
+It is interesting to see that we have only one test block in the sample
+test file but in the test summary output by `prove` we see that the number
+of tests are 2. Why the difference? We can easily find it out by asking
+`prove` to generate a detailed test report for all the individual tests.
+This is achieved by passing the `-v` option (meaning "verbose") to the
+`prove` command we used earlier:
+
+[source,bash,linenums]
+----
+prove -v t/foo.t
+----
+
+Now the output shows all the individual tests performed in that test file:
+
+....
+t/foo.t ..
+ok 1 - TEST 1: hello, world - status code ok
+ok 2 - TEST 1: hello, world - response_body - response is expected (req 0)
+1..2
+ok
+All tests successful.
+Files=1, Tests=2, 0 wallclock secs (0.01 usr 0.01 sys + 0.07 cusr 0.03 csys = 0.12 CPU)
+Result: PASS
+....
+
+Obviously, the first test is doing the status code check, which is dictated
+by the `error_code` data section in the test block, and the second test
+is doing the response body check, required by the `response_body` section.
+Now the mystery is solved.
+
+It is worth mentioning that the `--- error_code: 200` section is automatically
+assumed when no `error_code` section is explicitly provided in the test
+block. So our test block above can be simplified by removing the `--- error_code:
+200` line without affecting the number of tests. This is because that checking
+200 response status code is so common that `Test::Nginx` makes it the default.
+If you expect a different status code, like 500, then just add an explicit
+`error_code` section.
+
+From this example, we can see that one test block can contain multiple
+tests and the number of tests for any given test block can be determined
+or predicted by looking at the data sections performing output checks.
+This is important when we provide a "test plan" ourselves to the test file
+where a "test plan" is the exact number of tests we _expect_ the current
+test file to run. If a different number of tests than the plan were actually
+run, then the test result would be considered malicious even when all the
+tests are passed successfully. Thus, a test plan adds a strong constraint
+on the total number of tests expected to be run. For our `t/foo.t` file
+here, however, we intentionally avoid providing any test plans by passing
+the `'no_plan'` argument to the `use` statement that loads the `Test::Nginx::Socket`
+module. We will revisit the "test plan" feature and explain how to provide
+one in a later section.
+
+=== Running Multiple Files
+
+Running multiple test files are straightforward; just specify the file
+names on the `prove` command line, as in
+
+[source,bash]
+----
+prove -v t/foo.t t/bar.t t/baz.t
+----
+
+If you want to run all the test files directly under the `t/` directory,
+then using a shell wildcard can be handy:
+
+[source,bash]
+----
+prove -v t/*.t
+----
+
+In case that you have sub-directories under `t/`, you can specify the `-r`
+option to ask `prove` to recursively traverse the while directory tree rooted
+at `t/` to find test files:
+
+[source,bash]
+----
+prove -r t/
+----
+
+This command is also the standard way to run the whole test suite of a
+project.
+
+=== Running Individual Test Blocks
+
+`Test::Nginx` makes it easy to run an individual test block in a given
+file. Just add the special data section `ONLY` to that test block you want
+to run individually and `prove` will skip all the other test blocks while
+running that test file. For example,
+
+[source,test-base]
+----
+=== TEST 1: hello, world
+This is just a simple demonstration of the
+echo directive provided by ngx_http_echo_module.
+--- config
+location = /t {
+    echo "hello, world!";
+}
+--- request
+GET /t
+--- response_body
+hello, world!
+--- ONLY
+----
+
+Now `prove` won't run any other test blocks (if any) in the same test file.
+
+This is very handy while debugging a particular test block. You can focus
+on one test case at a time without worrying about other unrelated test
+cases stepping in your way.
+
+When using the link:http://www.vim.org/[Vim] editor, we can quickly insert
+a `--- ONLY` line to the test block we are viewing in the vim file buffer,
+and then type `:!prove %` in the command mode of vim without leaving the
+editor window. This works because vim automatically expands the special
+`%` placeholder with the path of the current active file being edited.
+This workflow is great since you never leave your editor window and you
+never have to type the title (or other IDs) of your test block nor the
+path of the containing test file. You can quickly jump between test blocks
+even across different files. Test-driven development usually demands very
+frequent interactions and iterations, and `Test::Nginx` is particularly
+optimized to speed up this process.
+
+Sometimes you may forget to remove the `--- ONLY` line from some test files
+even after debugging, this will incorrectly skip all the other tests in
+those files. To catch such mistakes, `Test::Nginx` always reports a warning
+for files using the `ONLY` special section, as in
+
+[source,console]
+----
+$ prove t/foo.t
+t/foo.t .. # I found ONLY: maybe you're debugging?
+t/foo.t .. ok
+All tests successful.
+Files=1, Tests=2, 0 wallclock secs (0.01 usr 0.00 sys + 0.09 cusr 0.03 csys = 0.13 CPU)
+Result: PASS
+----
+
+This way it is much easier to identify any leftover `--- ONLY` lines.
+
+Similar to `ONLY`, `Test::Nginx` also provides the `LAST` data section
+to make the containing test block become the last test block being run
+in that test file.
+
+NOTE: The special data sections `ONLY` and `LAST` are actually features
+inherited from the `Test::Base` module.
+
+=== Skipping Tests
+
+We can specify the special `SKIP` data section to skip running the containing
+test block unconditionally. This is handy when we write a test case that
+is for a future feature or a test case for a known bug that we haven't
+had the time to fix right now.
+
+It is also possible to skip a whole test file in the prologue part. Just
+replace the `use` statement with the following form.
+
+[source,Perl]
+----
+use Test::Nginx::Socket skip_all => "some reasons";
+----
+
+Then running the test file gives something like follows.
+
+....
+t/foo.t .. skipped: some reasons
+....
+
+NOTE: It is also possible to conditionally skip a whole test file but it
+requires a little bit of Perl programming. Interested readers can try using
+a `BEGIN {}` before before the `use` statement to calculate the value of
+the `skip_all` option on the fly.

@@ -13,8 +13,18 @@ or
 
 my $changes = 0;
 
+my $skipping;
 my $res;
 while (<$in>) {
+    if (/^(?:\.{4}|-{4})\s*$/) {
+        $skipping = !$skipping;
+        next;
+    }
+
+    if ($skipping) {
+        next;
+    }
+
     if (/^\s|^\s*$|^\/\//) { # verbatim
         next;
     }
