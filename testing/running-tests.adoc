@@ -1,6 +1,6 @@
 == Running Tests
 
-Like most Perl-based testing frameworks, `Test:Nginx` requires Perl's `prove`
+Like most Perl-based testing frameworks, `Test:Nginx` relies on Perl's `prove`
 command-line utility to run the test files. The `prove` utility is usually
 shipped with the standard perl distribution so we should already have it
 when we have `perl` installed.
