@@ -7,6 +7,6 @@ coverage of the tests.
 The previous section introduces data sections provided by `Test::Nginx::Socket`
 for examining messages in the NGINX error log file, which is a powerful
 tool to check for errors in the tests. Sometimes we want to test more extreme
-cases where the NGINX server even refuses to start up or the server is
+cases like that the NGINX server even refuses to start up or that the server is
 never able to send a well-formed response.
 
