@@ -8,6 +8,7 @@
 .. link:testing/test-file-layout.adoc[Test File Layout]
 .. link:testing/running-tests.adoc[Running Tests]
 .. link:testing/preparing-tests.adoc[Preparing Tests]
+.. link:testing/testing-erroneous-cases.adoc[Testing Erroneous Cases]
 .. link:testing/test-modes.adoc[Test Modes]
 .. link:testing/mocking.adoc[Mocking]
 .. link:testing/test-cluster.adoc[Test Cluster]
