@@ -1,6 +1,7 @@
 == Running Tests
 
-Like most Perl-based testing frameworks, `Test:Nginx` relies on Perl's `prove`
+Like most Perl-based testing frameworks, `Test:Nginx` relies on Perl's
+`prove`
 command-line utility to run the test files. The `prove` utility is usually
 shipped with the standard perl distribution so we should already have it
 when we have `perl` installed.
@@ -187,7 +188,8 @@ prove -v t/*.t
 ----
 
 In case that you have sub-directories under `t/`, you can specify the `-r`
-option to ask `prove` to recursively traverse the while directory tree rooted
+option to ask `prove` to recursively traverse the while directory tree
+rooted
 at `t/` to find test files:
 
 [source,bash]
@@ -288,3 +290,61 @@ NOTE: It is also possible to conditionally skip a whole test file but it
 requires a little bit of Perl programming. Interested readers can try using
 a `BEGIN {}` before before the `use` statement to calculate the value of
 the `skip_all` option on the fly.
+
+=== Test Running Order
+
+==== Test File Running Order
+
+Test files are usually run by the alphabetical order of their file names.
+Some people prefer explicitly controlling the running order of their test
+files by prefixing the test file names with number sequences like `001-`,
+`002-`, and etc.
+
+The test suite of the link:https://github.com/openresty/lua-nginx-module#readme[ngx_http_lua]
+module follows this practice, for example, which has test file names like
+below
+
+....
+t/000-sanity.t
+t/001-set.t
+t/002-content.t
+t/003-errors.t
+...
+t/139-ssl-cert-by.t
+....
+
+Although the `prove` utility supports running test files in multiple parallel
+jobs via the `-jN` option, `Test::Nginx` does not really support this mode
+since all the test cases share exactly the same test server directory,
+`t/servroot/`, and the same listening ports, as we have already seen, while
+parallel running requires strictly isolated running environments for each
+individual thread of execution. One can still manually split the test files
+into different groups and run each group on a different (virtual) machine
+or an isolated environment like a Linux container.
+
+==== Test Block Running Order
+
+By default, the `Test::Nginx` scaffold _shuffles_ the test blocks in each
+file and run them in a _random_ order. This behavior encourages writing
+self-contained and independent test cases and also increases the chance
+of hitting a bug by actively mutating the relative running order of the
+test cases. This may, indeed, confuse new comers, coming from a more traditional
+testing platform.
+
+We can always disable this test block shuffling behavior by calling the
+Perl function, `no_shuffle()`, imported by the `Test::Nginx::Socket` module,
+before the `run_tests()` call in the test file prologue. For example,
+
+[source,Perl]
+----
+use Test::Nginx::Socket 'no_plan';
+
+no_shuffle();
+run_tests();
+
+__DATA__
+...
+----
+
+With the `no_shuffle()` call in place, the test blocks are run in the exact
+same order as their appearance in the test file.
