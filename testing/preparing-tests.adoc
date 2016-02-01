@@ -218,7 +218,8 @@ To achieve this, we can call the `no_long_string()` Perl function before
 the `run_tests()` function call in the prologue part of the test file.
 Below is such an example.
 
-....
+[source,test-base]
+----
 use Test::Nginx::Socket 'no_plan';
 
 no_long_string();
@@ -240,7 +241,7 @@ GET /t
 Life is short.
 Moon is deem.
 Sun is shining.
-....
+----
 
 Note the `no_long_string()` call in the prologue part. It is important
 to place it before the `run_tests()` call otherwise it would be too late
@@ -290,27 +291,30 @@ key words in a long data string, you can specify a Perl regular expression
 to do a pattern match against the actual request body data. This is achieved
 by the `response_body_like` data section. For example,
 
-....
+[source,test-base]
+----
 --- response_body_like: age: \d+
-....
+----
 
 Be careful when you are using the multi-line data section value form. A
 trailing newline character appended to your section value may make your
 pattern never match. In this case the `chomp` filter we introduced in an
 early section can be very helpful here. For example,
 
-....
+[source,test-base]
+----
 --- response_body_like chomp
 age: \d+
-....
+----
 
 You can also use the `eval` filter to construct a Perl regular expression
 object with a Perl expression, as in
 
-....
+[source,test-base]
+----
 --- response_body_like eval
 qr/age: \d+/
-....
+----
 
 This is the most flexible form to specify a pattern.
 
@@ -323,12 +327,13 @@ expression objects. You can use various different quoting forms like `qr/.../`,
 The `response_headers` data section can be used to validate response header
 entries. For example,
 
-....
+[source,test-base]
+----
 --- response_headers
 Foo: bar
 Bar: baz
 !Blah
-....
+----
 
 This section dictates 3 tests actually:
 
@@ -342,4 +347,266 @@ and
 In addition to responses, the NGINX error log file is also an important
 output channel for an NGINX server setup.
 
-// TODO
+==== True-False Tests
+
+One immediate testing requirement is to check whether or not a piece of
+text appears in any error log messages. Such checks can be done via the
+data sections `error_log` and `no_error_log`, respectively. The former
+ensures that some lines in the error log file contain the string specified
+as the section value while the latter tests the opposite: ensuring that
+no line contains the pattern.
+
+For example,
+
+[source,test-base]
+----
+--- error_log
+Hello world from my server
+----
+
+Then the string `Hello world from my server` (without the trailing new-line)
+must appear in at least one line of the NGINX error log. You can specify
+multiple strings in separate lines of the section value to perform different
+checks, for instance,
+
+[source,test-base]
+----
+--- error_log
+This is a dog!
+Is it a cat?
+----
+
+Then it performs two error log checks, one is to ensure that the string
+`This is a dog!` appears in some error log lines. The order of these two
+string patterns do not matter at all.
+
+If one of the string pattern failed to match any lines in the error log
+file, then we would get a test failure report from `prove` like below.
+
+....
+# Failed test 'TEST 1: simple test - pattern "This is a dog!" matches a line in error.log (req 0)'
+....
+
+If you want to specify a Perl regular expression (regex) as one of the
+patterns, then you should use the `eval` section filter to construct a
+Perl-array as the section value, as in
+
+[source,test-base]
+----
+--- error_log eval
+[
+  "This is a dog!",
+  qr/\w+ is a cat\?/,
+]
+----
+
+As we have seen earlier, Perl regexes can be constructed via the `qr/.../`
+quoting syntax. Perl string patterns in the Perl array specified by double
+quotes or single quotes are still treated as plain string patterns, as
+usual. If the array contains only one regex pattern, then you can omit
+the array itself, as in
+
+[source,test-base]
+----
+--- error_log eval
+qr/\w+ is a cat\?/
+----
+
+`Test::Nginx` puts the error log file of the test NGINX server in the file
+path `t/servroot/logs/error.log`. As a test writer, we frequently check
+out this file directly when things go wrong. For example, it is common
+to make mistakes or typos in the patterns we specify for the `error_log`
+section. Also, scanning the raw log file can give us insight about the
+details of the NGINX internal working when the NGINX debugging logs are
+enabled in the NGINX build.
+
+The `no_error_log` section is very similar to `error_log` but it checks
+the nonexistence of the string patterns in the NGINX error log file. One
+of the most frequent uses of the `no_error_log` section is to ensure that
+there is _no_ error level messages in the log file.
+
+[source,test-base]
+----
+--- no_error_log
+[error]
+----
+
+If, however, there is a line in the nginx error log file that contains
+the string `[error]`, then the test fails. Below is such an example.
+
+....
+# Failed test 'TEST 1: simple test - pattern "[error]" should not match any line in error.log but matches line "2016/02/01 11:59:50 [error] 1788\#0: *1 lua entry thread aborted: runtime error: content_by_lua(nginx.conf:42):2: bad"'
+....
+
+This is a great way to find the details of the error quickly by just looking
+at the test report.
+
+Like `error_log`, this section also supports Perl array values and Perl
+regex values though the `eval` filter.
+
+==== Grep Tests
+
+The `error_log` and `no_error_log` sections are very handy in quickly checking
+the appearance of contain patterns in the NGINX error log file. But they
+have serious limitations in that it is impossible to impose stronger constraints
+on the relative order of the messages containing the patterns nor on the
+number of their occurrences.
+
+To address such limitations, `Test::Nginx::Socket` provides an alternative
+way to check NGINX error logs in a way similar to the famous UNIX tool,
+`grep`. The sections `grep_error_log` and `grep_error_log_out` are used
+for this purpose. The test writer uses the `grep_error_log` section to
+specify a pattern, with which the test framework scans through the NGINX
+error log file and collect all the matched parts of the log file lines
+along the way, forming a final result. This aggregated log data result
+is then matched against the expected value specified as the value of the
+`grep_error_log_out` section, in a similar way as with the `response_body`
+section discussed above.
+
+It is easiest to explain with a simple example.
+
+[source,test-base]
+----
+=== TEST 1: simple grep test for error logs
+--- config
+    location = /t {
+        content_by_lua_block {
+            print("it is matched!")
+            print("it is matched!")
+            print("it is matched!")
+        }
+    }
+--- request
+GET /t
+--- grep_error_log: it is matched!
+--- grep_error_log_out
+it is matched!
+it is matched!
+it is matched!
+----
+
+Here we use the Lua function `print()` provided by the
+link:https://github.com/openresty/lua-nginx-module#readme[ngx_http_lua]
+module to generate NGINX error log messages at the `notice` level. This
+test case tests the number of the log messages containing the string `it
+is matched!`. It is important to note that only the _matched_ part of the
+log file lines are collected in the final result instead of the whole log
+lines. This simplifies the comparison a lot since NGINX error log messages
+can contain varying details like timestamps and connection numbers.
+
+A more useful form of this test is to specify a Perl regex pattern in the
+`grep_error_log` section. Consider the following example.
+
+[source,test-base]
+----
+=== TEST 1: simple grep test for error logs
+--- config
+    location = /t {
+        content_by_lua_block {
+            print("test: before sleeping...")
+            ngx.sleep(0.001)  -- sleeping for 1ms
+            print("test: after sleeping...")
+        }
+    }
+--- request
+GET /t
+--- grep_error_log eval: qr/test: .*?\.\.\./
+--- grep_error_log_out
+test: before sleeping...
+test: after sleeping...
+----
+
+We specify a Perl regex pattern, `test: .*?\.\.\.`, here to filter out
+all the error log messages starting with `test:` and ending with `...`.
+And naturally in this test we also require the relative order of these
+two messages, that is, `before sleeping` must appear _before_ `after sleeping`.
+Otherwise, we shall see failure reports like below:
+
+....
+# Failed test 'TEST 1: simple grep test for error logs - grep_error_log_out (req 0)'
+# at ..../lib/Test/Nginx/Socket.pm line 1048.
+#      got: "test: after sleeping...\x{0a}test: before sleeping...\x{0a}"
+#   length: 49
+# expected: "test: before sleeping...\x{0a}test: after sleeping...\x{0a}"
+#   length: 49
+# strings begin to differ at char 7 (line 1 column 7)
+....
+
+As with the `response_body` section, we can also call the `no_long_string()`
+Perl function before `run_tests()` in the test file prologue, so as to
+disable the long string output mode and enable the `diff` mode. Then the
+test failure would look like this:
+
+....
+#   Failed test 'TEST 1: simple grep test for error logs - grep_error_log_out (req 0)'
+#   at .../lib/Test/Nginx/Socket.pm line 1044.
+# @@ -1,2 +1,2 @@
+# -test: before sleeping...
+#  test: after sleeping...
+# +test: before sleeping...
+....
+
+Obviously, for this test case, the `diff` format looks better.
+
+==== Extra Delay Before Log Checks
+
+By default, `Test::Nginx::Socket` performs the NGINX error log checks not
+long after it receives the complete HTTP response for the test request.
+Sometimes, when the log messages are generated by the server after sending
+out the response, the error log checks may be carried out too early
+that the messages are not yet written into the log file. In this case,
+we can specify an extra delay via the `wait` data section for the test
+scaffold to wait for the error log messages. Here is an example:
+
+[source,test-base]
+----
+=== TEST 1: wait for the timer
+--- config
+    location = /t {
+        content_by_lua_block {
+            local function f(premature)
+                print("HERE!")
+            end
+            assert(ngx.timer.at(0.1, f))
+        }
+    }
+--- request
+GET /t
+--- error_log
+HERE!
+--- no_error_log
+[error]
+--- wait: 0.12
+----
+
+Here we create a timer via the `ngx.timer.at` Lua function, which expires
+after 0.1 seconds. Due to the asynchronous nature of timers, the request
+handler does not wait for the timer to expire and immediately finishes
+processing the current request and sends out a response with an empty body.
+To check for the log message `HERE!` generated by the timer handler `f`,
+we have to specify an extra delay for the test scaffold to wait. The 0.12
+seconds time is specified in this example but any values larger than 0.1
+would suffice. Without the `wait` section, this test case would fail with
+the following output:
+
+....
+# Failed test 'TEST 1: wait for the timer - pattern "HERE!" matches a line in error.log (req 0)'
+....
+
+Obviously the test scaffold checks the error log too soon, even before
+the timer handler runs.
+
+=== Section Review
+
+`Test::Nginx::Socket` offers a rich set of data sections for specifying
+various different input data and expected output data, ranging from NGINX
+configuration file snippets, test requests, to expected responses and error
+log messages. We have already demonstrated the power of data driven testing
+and declarative test case crafting. We want to achieve multiple goals at
+the same time, that is, not only to make the tests self-contained and highly
+readable, but also to make the test report easy to interpret and analyze
+when some of the tests fail. Raw files automatically generated by the test
+scaffold, like `t/servroot/conf/nginx.conf` and `t/servroot/logs/error.log`,
+should be checked frequently when manually debugging the test cases. The
+next section extends the discussion of this section with a focus on testing
+erroneous cases.
