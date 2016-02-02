@@ -7,6 +7,126 @@ coverage of the tests.
 The previous section introduces data sections provided by `Test::Nginx::Socket`
 for examining messages in the NGINX error log file, which is a powerful
 tool to check for errors in the tests. Sometimes we want to test more extreme
-cases like that the NGINX server even refuses to start up or that the server is
-never able to send a well-formed response.
+cases like server startup failures, malformed responses, bad requests,
+and various kinds of timeout errors.
 
+=== Expected Server Startup Failures
+
+Sometimes the NGINX server is expected to fail to start, like using an
+NGINX configuration directive in the wrong way or some hard prerequisites
+are not met in early initialization. If we want to test such cases, especially
+the error log messages generated for such failures, we could use the `must_die`
+data section in our test block to signal the test scaffold that the NGINX
+server is _expected_ to die upon startup in this very block.
+
+The following example tests the case of throwing a Lua exception in the
+context of `init_by_lua_block` of the `ngx_http_lua` module.
+
+[source,test-base]
+----
+=== TEST 1: dying in init_by_lua_block
+--- http_config
+    init_by_lua_block {
+        error("I am dying!")
+    }
+--- config
+--- must_die
+--- error_log
+I am dying!
+----
+
+The Lua code in `init_by_lua_block` runs in the NGINX master process during
+the NGINX configuration file loading process. Throwing out a Lua exception
+there aborts the NGINX startup process immediately. The occurrence of the
+`must_die` section tells the test scaffold to treat NGINX server startup
+failures as a test pass while a successful startup as a test failure. The
+`error_log` section there ensures that the server fails in the expected
+way, that is, due to the "I am dying!" exception.
+
+If we remove the `--- must_die` line from the test block above, then the
+test file won't even run to completion:
+
+....
+t/a.t .. nginx: [error] init_by_lua error: init_by_lua:2: I am dying!
+stack traceback:
+	[C]: in function 'error'
+	init_by_lua:2: in main chunk
+Bailout called.  Further testing stopped:  TEST 1: dying in init_by_lua_block
+- Cannot start nginx using command
+"nginx -p .../t/servroot/ -c .../t/servroot/conf/nginx.conf > /dev/null".
+....
+
+By default the test scaffold treats NGINX server startup failures as fatal
+errors in running the tests. The `must_die` section, however, turns such
+a failure into a normal test checkup.
+
+=== Expected Malformed Responses
+
+HTTP responses should always be well-formed, but unfortunately the real
+world is complicated and there indeed exists cases where the responses
+can be malformed, like being truncated due to some unexpected causes.
+As a test designer, we always want to test such strange abnormal cases,
+among other things.
+
+Naturally, `Test::Nginx::Socket` treats malformed responses from the NGINX
+server as an error since it always does sanity checks on the responses
+it receives from the test server by default. But for test cases where we
+expect a malformed or truncated response sent from the server, we should
+explicitly tell the test scaffold to disable the response sanity check
+via the `ignore_response` data section.
+
+Consider the following example that closes the downstream connection immediately
+after sending out the first part of the response body.
+
+[source,test-base]
+----
+=== TEST 1: aborting response body stream
+--- config
+    location = /t {
+        content_by_lua_block {
+            ngx.print("hello")
+            ngx.flush(true)
+            ngx.exit(444)
+        }
+    }
+--- request
+    GET /t
+--- ignore_response
+--- no_error_log
+[error]
+----
+
+The `ngx.flush(true)` call in the `content_by_lua_block` handler is to
+ensure that any response body data buffered by NGINX is indeed flushed
+out to the system socket send buffers, which also usually means flushing
+the output data to the client side for local sockets. Also, the `ngx.exit(444)`
+call is used to immediately close the current downstream connection so
+it just interrupts the response body stream in the HTTP 1.1 chunked encoding.
+The important part is the `--- ignore_response` line which tells the test
+scaffold not to complain about the interrupted response data stream. If
+the test block above goes without this line, we will see the following
+test failure while running `prove`:
+
+....
+# Failed test 'TEST 1: aborting response body stream - no last chunk found - 5
+# hello
+# '
+....
+
+Obviously, the test scaffold complains about the lack of the "last chunk"
+used to indicate the end of the chunked encoded data stream. Because the
+server aborts the connection in the middle of response body data sending,
+there is no chance for the server to properly send well-formed response
+bodies in the chunked encoding.
+
+=== Testing Timeout Errors
+
+// TODO
+
+=== Mocking Bad Backend Responses
+
+// TODO
+
+=== Mocking Bad Client Requests
+
+// TODO
