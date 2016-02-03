@@ -129,7 +129,8 @@ they have a timeout protection that prevents them from waiting for too
 long.
 
 Testing and emulating timeout errors are often tricky in a self-contained
-unit test framework since most of the network traffic initiated by the test
+unit test framework since most of the network traffic initiated by the
+test
 cases are local only, that is, going through the local "loopback" device
 that has perfect latency and throughput. We will examine some of the tricks
 that can be used to reliably emulate various different kinds of timeout
@@ -247,7 +248,8 @@ failed to receive: timeout
 ----
 
 Here we use the `main_config` data section to define a TCP server of our
-own, listening at the port of 5678 on the local host. This is a mocked-up server
+own, listening at the port of 5678 on the local host. This is a mocked-up
+server
 that can establish new TCP connections but never write out anything and
 just sleep for 10 second before closing the session. Note that we are using
 the link:https://github.com/openresty/stream-lua-nginx-module#readme[ngx_stream_lua]
@@ -431,7 +433,8 @@ We will revisit the `mockeagain` library in the `Test Modes` section soon.
 
 === Mocking Bad Backend Responses
 
-Earlier in this section we have already seen examples that uses the link:https://github.com/openresty/stream-lua-nginx-module#readme[ngx_stream_lua]
+Earlier in this section we have already seen examples that uses the
+link:https://github.com/openresty/stream-lua-nginx-module#readme[ngx_stream_lua]
 module to mock a backend TCP server that accepts new incoming connections
 but never writes anything back. We could of course do fancier things in
 such a mocked server like emulating a buggy or malicious backend server
@@ -479,7 +482,17 @@ failed to get: SERVER_ERROR
 [error]
 ----
 
-Our mocked-up Memcached server can behave in any way that we like. Yay!
+Our mocked-up Memcached server can behave in any way that we like. Hooray!
+
+NOTE: `Test::Nginx::Socket` provides the data sections `tcp_listen`, `tcp_query`,
+`tcp_reply`, and etc to enable the builtin mocked TCP server of the test
+scaffold. You can use this facility when you do not want to depend on the
+`ngx_stream_lua` module or the NGINX stream subsystem for your test suite.
+Indeed, we were solely relying on the builtin TCP server of `Test::Nginx::Socket`
+before the `ngx_stream_lua` module was born. Similarly, `Test::Nginx::Socket`
+offers a builtin UDP server via the data sections `udp_listen`, `udp_query`,
+`udp_reply`, and etc. You can refer to the link:https://metacpan.org/pod/Test::Nginx::Socket[official
+documentation] of `Test::Nginx::Socket` for more details.
 
 === Emulating Bad Clients
 
