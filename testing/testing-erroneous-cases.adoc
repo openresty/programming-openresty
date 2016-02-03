@@ -121,12 +121,454 @@ bodies in the chunked encoding.
 
 === Testing Timeout Errors
 
-// TODO
+Timeout errors are one of the most common network issues in the real world.
+Timeout might happen due to many reasons, like packet dropping on the wire
+or on the other end, connectivity problems, and other expensive operations
+blocking the event loop. Most of applications want to ensure that the
+they have a timeout protection that prevents them from waiting for too
+long.
+
+Testing and emulating timeout errors are often tricky in a self-contained
+unit test framework since most of the network traffic initiated by the test
+cases are local only, that is, going through the local "loopback" device
+that has perfect latency and throughput. We will examine some of the tricks
+that can be used to reliably emulate various different kinds of timeout
+errors in the test suite.
+
+==== Connecting Timeouts
+
+Connecting timeouts in the context of the TCP protocol are easiest to emulate.
+Just point the connecting target to a remote address that always drops
+any incoming (`SYN`) packets via a firewall rule or something similar.
+We provide such a "black-hole service" at the port 12345 of the `agentzh.org`
+host. You can make use of it if your test running environment allows public
+network access. Consider the following test case.
+
+[source,test-base]
+----
+=== TEST 1: connect timeout
+--- config
+    resolver 8.8.8.8;
+    resolver_timeout 1s;
+
+    location = /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(100) -- ms
+            local ok, err = sock:connect("agentzh.org", 12345)
+            if not ok then
+                ngx.log(ngx.ERR, "failed to connect: ", err)
+                return ngx.exit(500)
+            end
+            ngx.say("ok")
+        }
+    }
+--- request
+GET /t
+--- response_body_like: 500 Internal Server Error
+--- error_code: 500
+--- error_log
+failed to connect: timeout
+----
+
+We have to configure the `resolver` directive here because we need to resolve
+the domain name `agentzh.org` at request time (in Lua). We check the NGINX
+error log via the `error_log` section for the error string returned by
+the cosocket object's `connect()` method.
+
+It is important to use a relatively small timeout threshold in the test
+cases so that we do not have to wait for too long to complete the test
+run. Tests are meant to be run very often. The more frequently we run the
+tests, the more value we may gain from automating the tests.
+
+It is worth mentioning that the test scaffold's HTTP client does have a
+timeout threshold as well, which is 3 seconds by default. If your test
+request takes more than 3 seconds, you get an error message in the test
+report:
+
+....
+ERROR: client socket timed out - TEST 1: connect timeout
+....
+
+This message is what we would get if we commented out the `settimeout`
+call and relies on the default 60 second timeout threshold in cosockets.
+
+We could change this default timeout threshold used by the test scaffold
+client by setting a value to the `timeout` data section, as in
+
+[source,test-base]
+----
+--- timeout: 10
+----
+
+Now we have 10 seconds of timeout protection instead of 3.
+
+==== Reading Timeouts
+
+Emulating reading timeouts is also easy. Just try reading from a wire where
+the other end never writes anything but still keeps the connection alive.
+Consider the following example:
+
+[source,test-base]
+----
+=== TEST 1: read timeout
+--- main_config
+    stream {
+        server {
+            listen 5678;
+            content_by_lua_block {
+                ngx.sleep(10)  -- 10 sec
+            }
+        }
+    }
+--- config
+    lua_socket_log_errors off;
+    location = /t {
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            sock:settimeout(100) -- ms
+            assert(sock:connect("127.0.0.1", 5678))
+            ngx.say("connected.")
+            local data, err = sock:receive()  -- try to read a line
+            if not data then
+                ngx.say("failed to receive: ", err)
+            else
+                ngx.say("received: ", data)
+            end
+        }
+    }
+--- request
+GET /t
+--- response_body
+connected.
+failed to receive: timeout
+--- no_error_log
+[error]
+----
+
+Here we use the `main_config` data section to define a TCP server of our
+own, listening at the port of 5678 on the local host. This is a mocked-up server
+that can establish new TCP connections but never write out anything and
+just sleep for 10 second before closing the session. Note that we are using
+the link:https://github.com/openresty/stream-lua-nginx-module#readme[ngx_stream_lua]
+module in the `stream {}` configuration block. In our `location = /t`,
+which is the main target of this test case, connects to our mock server
+and tries to read a line from the wire. Apparently the 100ms timeout threshold
+on the client side is reached first and we can successfully exercise the
+error handling code for the reading timeout error.
+
+==== Sending Timeouts
+
+Triggering sending timeouts is much harder than connecting and reading
+timeouts. This is due to the asynchronous nature of writing.
+
+For performance reasons, there exists at least two layers of buffers for
+writes:
+
+. the userland send buffers inside the NGINX core, and
+. the socket send buffers in the operating system kernel's TCP/IP stack
+implementation
+
+To make the situation even worse, there also at least exists a system-level
+receive buffer layer on the other end of the connection.
+
+To make a send timeout error happen, the most naive way is to fill out
+all these buffers along the data sending chain while ensuring that the
+other end never actually reads anything on the application level. Thus,
+buffering makes a sending timeout particularly hard to reproduce and emulate
+in a typical testing and development environment with a small amount of
+(test) payload.
+
+Fortunately there is a userland trick that can intercept the libc wrappers
+for the actual system calls for socket I/O and do funny things that could
+otherwise be very difficult to achieve. Our link:https://github.com/openresty/mockeagain[mockeagain]
+library implements such a trick and supports emulating timeout errors at
+user-specified precise positions in the output data stream.
+
+The following example triggers a sending timeout right after sending out
+the "hello, world" string as the response body.
+
+[source,test-base]
+----
+=== TEST 1: send timeout
+--- config
+    send_timeout 100ms;
+    postpone_output 1;
+
+    location = /t {
+        content_by_lua_block {
+            ngx.say("hi bob!")
+            local ok, err = ngx.flush(true)
+            if not ok then
+                ngx.log(ngx.ERR, "flush #1 failed: ", err)
+                return
+            end
+
+            ngx.say("hello, world!")
+            local ok, err = ngx.flush(true)
+            if not ok then
+                ngx.log(ngx.ERR, "flush #2 failed: ", err)
+                return
+            end
+        }
+    }
+--- request
+GET /t
+--- ignore_response
+--- error_log
+flush #2 failed: timeout
+--- no_error_log
+flush #1 failed
+----
+
+Note the `send_timeout` directive that is used to configure the sending
+timeout for NGINX downstream writing operations. Here we use a small threshold,
+`100ms`, to ensure our test case runs fast and never hits the default 3
+seconds timeout threshold of the test scaffold client. The `postpone_output
+1` directive effectively turns off the "postpone output buffer" of NGINX,
+which may hold our output data before even reaching the libc system call
+wrappers. Finally, the `ngx.flush()` call in Lua ensures that _no_ buffers
+along the NGINX output filter chain holds our data without sending downward.
+
+Before running this test case, we have to set the following system environment
+variables (in the bash syntax):
+
+[source,bash]
+----
+export LD_PRELOAD="mockeagain.so"
+export MOCKEAGAIN="w"
+export MOCKEAGAIN_WRITE_TIMEOUT_PATTERN='hello, world'
+export TEST_NGINX_EVENT_TYPE='poll'
+----
+
+Let's go through them one by one:
+
+. The `LD_PRELOAD="mockeagain.so"` assignment pre-loads the `mockeagain`
+library into the running processes, including the NGINX server process
+started by the test scaffold, of course. You may also need to set the `LD_LIBRARY_PATH`
+environment to include the directory path of the `mockeagain.so` file if
+the file is not in the default system library search paths.
+. The `MOCKEAGAIN="w"` assignment enables the `mockeagain` library to intercept
+and do funny things about the writing operations on nonblocking sockets.
+. The `MOCKEAGAIN_WRITE_TIMEOUT_PATTERN='hello, world'` assignment makes
+`mockeagain` refuse to send more data after seeing the specified string
+pattern, `hello, world`, in the output data stream.
+. The `TEST_NGINX_EVENT_TYPE='poll'` setting makes NGINX server uses the
+`poll` event API instead of the system default (being `epoll` on Linux,
+for example). This is because `mockeagain` only supports `poll` events
+for now. Behind the scene, this environment just makes the test scaffold
+generate the following `nginx.conf` snippet.
++
+[source,nginx]
+-----
+events {
+    use poll;
+}
+-----
++
+You need to ensure, however, that your NGINX or OpenResty build has the
+`poll` support compiled in. Basically, the build should have the `./configure`
+option `--with-poll_module`.
++
+We have plans to add epoll edge-triggering support to `mockeagain` in the
+future. Hopefully by that time we do not have to use `poll` at least on
+Linux.
+
+Now you should get the test block above passed!
+
+Ideally, we could set these environments directly inside the test file
+because this test case will never pass without these environments anyway.
+We could add the following Perl code snippet to the very beginning of the
+test file prologue (yes, even before the `use` statement):
+
+[source,Perl]
+----
+BEGIN {
+    $ENV{LD_PRELOAD} = "mockeagain.so";
+    $ENV{MOCKEAGAIN} = "w";
+    $ENV{MOCKEAGAIN_WRITE_TIMEOUT_PATTERN} = 'hello, world';
+    $ENV{TEST_NGINX_EVENT_TYPE} = 'poll';
+}
+----
+
+The `BEGIN {}` block is required here because it runs before Perl loads
+any modules, especially `Test::Nginx::Socket`, in which we want these environments
+to take affect.
+
+It is a bad idea, however, to hard-code the path of the `mockeagain.so`
+file in the test file itself since different test runners might put `mockeagain`
+in different places in the file system. Better let the test runner configure
+the `LD_LIBRARY_PATH` environment containing the actual library path from
+outside.
+
+===== Mockeagain Troubleshooting
+
+If you are seeing the following error while running the test case above,
+
+....
+ERROR: ld.so: object 'mockeagain.so' from LD_PRELOAD cannot be preloaded (cannot open shared object file): ignored.
+....
+
+then you should check whether you have added the directory path of your
+`mockeagain.so` library to the `LD_LIBRARY_PATH` environment. On my system,
+for example, I have
+
+....
+export LD_LIBRARY_PATH=$HOME/git/mockeagain:$LD_LIBRARY_PATH
+....
+
+If you are seeing an error similar to the following,
+
+....
+nginx: [emerg] invalid event type "poll" in .../t/servroot/conf/nginx.conf:76
+....
+
+then your NGINX or OpenResty build does not have the poll module compiled
+in. And you should rebuild your NGINX or OpenResty by passing the `--with-poll_module`
+option to the `./configure` command line.
+
+We will revisit the `mockeagain` library in the `Test Modes` section soon.
 
 === Mocking Bad Backend Responses
 
-// TODO
+Earlier in this section we have already seen examples that uses the link:https://github.com/openresty/stream-lua-nginx-module#readme[ngx_stream_lua]
+module to mock a backend TCP server that accepts new incoming connections
+but never writes anything back. We could of course do fancier things in
+such a mocked server like emulating a buggy or malicious backend server
+that returns bad response data.
 
-=== Preparing Bad Client Requests
+For example, while testing a Memcached client, it would be pretty hard
+to emulate erroneous error responses or ill-formed responses with a real
+Memcached server. Now it is trivial with mocking:
 
-// TODO
+[source,test-base]
+----
+=== TEST 1: get() results in an error response
+--- main_config
+    stream {
+        server {
+            listen 1921;
+            content_by_lua_block {
+                ngx.print("SERVER_ERROR\r\n")
+            }
+        }
+    }
+--- config
+    location /t {
+        content_by_lua_block {
+            local memcached = require "resty.memcached"
+            local memc = memcached:new()
+
+            assert(memc:connect("127.0.0.1", 1921))
+
+            local res, flags, err = memc:get("dog")
+            if not res then
+                ngx.say("failed to get: ", err)
+                return
+            end
+
+            ngx.say("get: ", res)
+            memc:close()
+        }
+    }
+--- request
+GET /t
+--- response_body
+failed to get: SERVER_ERROR
+--- no_error_log
+[error]
+----
+
+Our mocked-up Memcached server can behave in any way that we like. Yay!
+
+=== Emulating Bad Clients
+
+The `Test::Nginx::Socket` test framework provides special data sections
+to help emulating ill-behaved HTTP clients.
+
+==== Crafting Bad Requests
+
+The `raw_request` data section can be used to specify whatever data for
+the test request. It is often used with the `eval` section filter so that
+we can easily encode special characters like `\r`. Let's look at the following
+example.
+
+[source,test-nginx]
+----
+=== TEST 1: missing the Host request header
+--- config
+    location = /t {
+        return 200;
+    }
+--- raw_request eval
+"GET /t HTTP/1.1\r
+Connection: close\r
+\r
+"
+--- response_body_like: 400 Bad Request
+--- error_code: 400
+----
+
+So we easily construct a malformed request that does not have a `Host`
+header, which results in a 400 response from the NGINX server, as expected.
+
+The `request` data section we have been using so far, on the other hand,
+always ensures that a well-formed HTTP request is sent to the test server.
+
+==== Emulating Client Aborts
+
+Client aborts are a very intriguing phenomenon in the web world. Sometimes
+we want the server to continue processing even after the client aborts
+the connection; on other occasions we just want to abort the whole request
+handler immediately in such cases. Either way, we need robust way to emulate
+client aborts in our unit test cases.
+
+We have already discussed the `timeout` data section that can be used to
+adjust the default timeout protection threshold used by the test scaffold
+client. We could also use it to abort the connection prematurely. A small
+timeout threshold is often desired for this purpose. To suppress the test
+scaffold from printing out an error on client timeout, we can specify the
+`abort` data section to signal the test scaffold. Let's put these together
+in a simple test case.
+
+[source,test-nginx]
+----
+=== TEST 1: abort processing in the Lua callback on client aborts
+--- config
+    location = /t {
+        lua_check_client_abort on;
+
+        content_by_lua_block {
+            local ok, err = ngx.on_abort(function ()
+                ngx.log(ngx.NOTICE, "on abort handler called!")
+                ngx.exit(444)
+            end)
+
+            if not ok then
+                error("cannot set on_abort: " .. err)
+            end
+
+            ngx.sleep(0.7)  -- sec
+            ngx.log(ngx.NOTICE, "main handler done")
+        }
+    }
+--- request
+    GET /t
+--- timeout: 0.2
+--- abort
+--- ignore_response
+--- no_error_log
+[error]
+main handler done
+--- error_log
+client prematurely closed connection
+on abort handler called!
+----
+
+In this example, we make the test scaffold client abort the connection
+after 0.2 seconds via the `timeout` section. Also we prevent the test scaffold
+from printing out the client timeout error by specifying the `abort` section.
+Finally, in the Lua application code, we checks for client abort events
+by turning on the `lua_check_client_abort` directive and aborts the server
+processing by calling `ngx.exit(444)` in our Lua callback function registered
+by the `ngx.on_abort` API.
