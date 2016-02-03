@@ -1,0 +1,30 @@
+== Test Modes
+
+One unique feature of `Test::Nginx` is that it allows running the same
+test suite in wildly different ways, or test modes, by just configuring
+some system environment variables. Different test modes have different
+focus and may find different categories of bugs or performance issues in
+the applications being tested. The data driven nature of the test framework
+makes it easy to add new test modes without changing the user test files
+at all. And it is also possible to combine different test modes to form
+new (hybrid) test modes. The capability of running the same test suite
+in many different ways helps extracting more value from the tests that
+we already have.
+
+This section will iterate through various different test modes supported
+by `Test::Nginx::Socket` and their corresponding system environment variables
+used to enable or control them.
+
+=== Benchmark Mode
+
+=== HUP Reload Mode
+
+=== Valgrind Mode
+
+=== Naive Memory Leak Check Mode
+
+=== Mockeagain Mode
+
+=== Manual Debugging Mode
+
+=== SystemTap Mode
