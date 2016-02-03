@@ -3,7 +3,7 @@
 One unique feature of `Test::Nginx` is that it allows running the same
 test suite in wildly different ways, or test modes, by just configuring
 some system environment variables. Different test modes have different
-focus and may find different categories of bugs or performance issues in
+focuses and may find different categories of bugs or performance issues in
 the applications being tested. The data driven nature of the test framework
 makes it easy to add new test modes without changing the user test files
 at all. And it is also possible to combine different test modes to form
