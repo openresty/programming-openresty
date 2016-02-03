@@ -8,7 +8,7 @@ the applications being tested. The data driven nature of the test framework
 makes it easy to add new test modes without changing the user test files
 at all. And it is also possible to combine different test modes to form
 new (hybrid) test modes. The capability of running the same test suite
-in many different ways helps extracting more value from the tests that
+in many different ways helps squeezing more value out of the tests
 we already have.
 
 This section will iterate through various different test modes supported
