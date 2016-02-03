@@ -57,6 +57,11 @@ the `Test::Nginx::Socket` module to customize the testing configurations
 and behaviors for the current test file. We will return to such fancier
 prologues in later sections. They can be very helpful in some cases.
 
+NOTE: Perl allows function calls to omit the parentheses if the context
+is unambiguous. So we may see Perl function calls without parentheses in
+real-world test files' prologue part, like `run_tests;`. We may use such
+forms in examples presented in later sections because they are more compact.
+
 === The Data Part
 
 The data part is the most important part of any test files powered by `Test::Nginx`.
