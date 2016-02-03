@@ -43,6 +43,9 @@ available) or just accept all the default settings.
 `Test::Nginx` provides several different testing classes for different
 user requirements. The most frequently used one is `Test::Nginx::Socket`.
 The rest of this chapter will focus on this testing class and its subclasses.
+We will use the names `Test::Nginx` and `Test::Nginx::Socket` interchangeably
+from now on to mean the `Test::Nginx::Socket` test module and its subclasses,
+unless otherwise specified.
 
 // Alas. GitBook does not support sidebar blocks in its AsciiDoc render.
 // .Another Test::Nginx
