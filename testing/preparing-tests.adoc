@@ -152,8 +152,8 @@ the `pipelined_requests` section instead of `request`. For instance,
 --- pipelined_requests eval
 ["GET /t", "GET /t"]
 
---- request_body eval
-["ok", "ok"]
+--- response_body eval
+["ok\n", "ok\n"]
 ----
 
 It is worth noting that we use the `eval` filter with the `pipelined_requests`
