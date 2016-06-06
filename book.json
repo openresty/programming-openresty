@@ -1,17 +1,8 @@
 {
     "author": "Yichun Zhang <agentzh@openresty.org>",
     "description": "Official Guide on OpenResty Programming",
-    "extension": null,
     "generator": "site",
-    "isbn": null,
     "links": {
-        "sharing": {
-            "all": null,
-            "facebook": null,
-            "google": null,
-            "twitter": null,
-            "weibo": null
-        },
         "sidebar": {
             "About The Author": "http://agentzh.org/",
             "OpenResty Home": "https://openresty.org"
