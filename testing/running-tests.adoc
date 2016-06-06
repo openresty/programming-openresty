@@ -270,7 +270,21 @@ inherited from the `Test::Base` module.
 We can specify the special `SKIP` data section to skip running the containing
 test block unconditionally. This is handy when we write a test case that
 is for a future feature or a test case for a known bug that we haven't
-had the time to fix right now.
+had the time to fix right now. For example,
+
+[source,test-base]
+----
+=== TEST 1: test for the future
+--- config
+    location /t {
+      some_fancy_directive;
+    }
+--- request
+    GET /t
+--- response_body
+blah blah blah
+--- SKIP
+----
 
 It is also possible to skip a whole test file in the prologue part. Just
 replace the `use` statement with the following form.
