@@ -585,3 +585,32 @@ Finally, in the Lua application code, we checks for client abort events
 by turning on the `lua_check_client_abort` directive and aborts the server
 processing by calling `ngx.exit(444)` in our Lua callback function registered
 by the `ngx.on_abort` API.
+
+==== Clients Never Closing Connections
+
+Unlike most well-formed HTTP clients in the market, the HTTP client used
+by Test::Nginx::Socket _never_ actively closes the connection unless a
+timeout error happens (exceeding the timeout threshold as specified by
+the `--- timeout` section). This can ensure the NGINX server always actually
+closes the connection when the request specifies the "Connection: close"
+request header.
+
+When the server does not close the connection, there is a "connection leak"
+bug on the server side. For example, NGINX uses reference counting (in
+`r->main->count`) in its HTTP subsystem to determine whether a request
+can be closed and freed. When there is an error in this reference counting,
+NGINX may never close the request, leading to resource leaks. In such cases,
+the corresponding test cases always fail with a client-side timeout error,
+for instance,
+
+[source]
+----
+# Failed test 'ERROR: client socket timed out - TEST 1: foo
+# '
+----
+
+Obviously Test::Nginx::Socket is a malicious HTTP client by default in
+this aspect. This is also why our test scaffold avoids using a well-formed
+HTTP client library itself. Most test suite is focusing on extreme and
+erroneous cases anyway and well-formed HTTP clients help hiding problems
+instead of exposing them.
