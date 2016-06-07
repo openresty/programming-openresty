@@ -589,7 +589,7 @@ by the `ngx.on_abort` API.
 ==== Clients Never Closing Connections
 
 Unlike most well-formed HTTP clients in the market, the HTTP client used
-by Test::Nginx::Socket _never_ actively closes the connection unless a
+by `Test::Nginx::Socket` _never_ actively closes the connection unless a
 timeout error happens (exceeding the timeout threshold as specified by
 the `--- timeout` section). This can ensure the NGINX server always actually
 closes the connection when the request specifies the "Connection: close"
@@ -609,7 +609,7 @@ for instance,
 # '
 ----
 
-Obviously Test::Nginx::Socket is a malicious HTTP client by default in
+Obviously `Test::Nginx::Socket` is a malicious HTTP client by default in
 this aspect. This is also why our test scaffold avoids using a well-formed
 HTTP client library itself. Most test suite is focusing on extreme and
 erroneous cases anyway and well-formed HTTP clients help hiding problems
