@@ -3,7 +3,8 @@
 One unique feature of `Test::Nginx` is that it allows running the same
 test suite in wildly different ways, or test modes, by just configuring
 some system environment variables. Different test modes have different
-focuses and may find different categories of bugs or performance issues in
+focuses and may find different categories of bugs or performance issues
+in
 the applications being tested. The data driven nature of the test framework
 makes it easy to add new test modes without changing the user test files
 at all. And it is also possible to combine different test modes to form
@@ -16,6 +17,234 @@ by `Test::Nginx::Socket` and their corresponding system environment variables
 used to enable or control them.
 
 === Benchmark Mode
+
+`Test::Nginx` has built-in support for performance testing or benchmarking.
+It can invoke external load testing tools like `ab` and `weighttp` to load
+each test case as hard as possible.
+
+To enable this benchmark testing mode, you can specify the `TEST_NGINX_BENCHMARK`
+system environment variable before running the `prove` command. For example,
+
+```bash
+export TEST_NGINX_BENCHMARK='2000 2'
+prove t/foo.t
+```
+
+This will run all the test cases in `t/foo.t` in benchmark mode. In particular,
+the first number, `2000` in the environment variable value indicates the
+total number of requests used to flood the server while the second number,
+`2`, means that the number of concurrent connections the client will use.
+
+If the test case uses an HTTP 1.1 request (which is the default), then
+the test scaffold
+will invoke the `weighttp` tool. If it is an HTTP 1.0 request, then the
+test scaffold invokes the `ab` tool.
+
+This test mode requires the `unbuffer` command-line utility from the `expect`
+package, as well as the `ab` and `weighttp` load testing tools. On Ubuntu/Debian
+systems, we can install most of the dependencies with the command
+
+```bash
+sudo apt-get install expect apache2-utils
+```
+
+You may need to build and install `weighttp` from source on Ubuntu/Debian
+yourself due to the lack of the Debian packaage.
+
+For the Mac OS X system, on the other hand, we can use homebrew to install
+it like this:
+
+```bash
+brew install expect weighttp
+```
+
+Now let's consider the following example.
+
+.t/hello.t
+[source,test-base]
+----
+use Test::Nginx::Socket 'no_plan';
+
+run_tests();
+
+__DATA__
+
+=== TEST 1: hello world
+--- config
+    location = /hello {
+        return 200 "hello world\n";
+    }
+--- request
+    GET /hello
+--- response_body
+hello world
+----
+
+Then we run this test file in the benchmark mode, like this:
+
+[source,bash]
+----
+export TEST_NGINX_BENCHMARK='200000 2'
+prove t/hello.t
+----
+
+The output should look like this:
+
+....
+t/hello.t .. TEST 1: hello world
+weighttp -c2 -k -n200000 http://127.0.0.1:1984/hello
+weighttp - a lightweight and simple webserver benchmarking tool
+
+starting benchmark...
+spawning thread #1: 2 concurrent requests, 200000 total requests
+progress:  10% done
+progress:  20% done
+progress:  30% done
+progress:  40% done
+progress:  50% done
+progress:  60% done
+progress:  70% done
+progress:  80% done
+progress:  90% done
+progress: 100% done
+
+finished in 2 sec, 652 millisec and 752 microsec, 75393 req/s, 12218 kbyte/s
+requests: 200000 total, 200000 started, 200000 done, 200000 succeeded, 0 failed, 0 errored
+status codes: 200000 2xx, 0 3xx, 0 4xx, 0 5xx
+traffic: 33190005 bytes total, 30790005 bytes http, 2400000 bytes data
+t/hello.t .. ok
+All tests successful.
+Files=1, Tests=2,  3 wallclock secs ( 0.01 usr  0.00 sys +  0.33 cusr  1.47 csys =  1.81 CPU)
+Result: PASS
+....
+
+The most important line in this:
+
+....
+finished in 2 sec, 652 millisec and 752 microsec, 75393 req/s, 12218 kbyte/s
+....
+
+We can see that this test case can archieve 75393 requests per second and
+12218 KB per second. Not bad for a single NGINX worker process!
+
+It is also important to keep an eye on failed requests. We surely do not
+care about the performance of error pages. We can get the number of error
+responses by checking the following output lines:
+
+....
+requests: 200000 total, 200000 started, 200000 done, 200000 succeeded, 0 failed, 0 errored
+status codes: 200000 2xx, 0 3xx, 0 4xx, 0 5xx
+....
+
+We are glad to see that all our requests succeeded in this run.
+
+If we want to benchmark the performance of multiple NGINX worker processes
+so as to utilize multiple CPU cores, then we can add the following lines
+to the test file prolog, _before_ the line `run_tests()`:
+
+[source,perl]
+----
+master_on();
+workers(4);
+----
+
+This way we can have 4 NGINX worker processes sharing the load.
+
+Behind the scenes, the test scaffold assembles the command line involving
+`weighttp` from the test block specification, in this case, the command
+line looks like this:
+
+[source,bash]
+----
+weighttp -c2 -k -n200000 http://127.0.0.1:1984/hello
+----
+
+There exists complicated cases, however, where the test scaffold fails
+to derive the exact command line equivalent.
+
+We can also enforce HTTP 1.0 requests in our test block by appending the
+"HTTP/1.0" string to the value of the `--- request` section:
+
+....
+--- request
+    GET /hello HTTP/1.0
+....
+
+In this case, the test scaffold will invoke the `ab` tool to flood the
+matching HTTP 1.0 request. The output might look like this:
+
+....
+t/hello.t .. TEST 1: hello world
+ab -r -d -S -c2 -k -n200000 http://127.0.0.1:1984/hello
+This is ApacheBench, Version 2.3 <$Revision: 1706008 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 127.0.0.1 (be patient)
+Completed 20000 requests
+Completed 40000 requests
+Completed 60000 requests
+Completed 80000 requests
+Completed 100000 requests
+Completed 120000 requests
+Completed 140000 requests
+Completed 160000 requests
+Completed 180000 requests
+Completed 200000 requests
+Finished 200000 requests
+
+
+Server Software:        openresty/1.9.15.1
+Server Hostname:        127.0.0.1
+Server Port:            1984
+
+Document Path:          /hello
+Document Length:        12 bytes
+
+Concurrency Level:      2
+Time taken for tests:   3.001 seconds
+Complete requests:      200000
+Failed requests:        0
+Keep-Alive requests:    198000
+Total transferred:      33190000 bytes
+HTML transferred:       2400000 bytes
+Requests per second:    66633.75 [#/sec] (mean)
+Time per request:       0.030 [ms] (mean)
+Time per request:       0.015 [ms] (mean, across all concurrent requests)
+Transfer rate:          10798.70 [Kbytes/sec] received
+
+Connection Times (ms)
+              min   avg   max
+Connect:        0     0    1
+Processing:     0     0  132
+Waiting:        0     0  132
+Total:          0     0  132
+t/hello.t .. ok
+All tests successful.
+Files=1, Tests=2,  4 wallclock secs ( 0.02 usr  0.00 sys +  0.51 cusr  1.39 csys =  1.92 CPU)
+Result: PASS
+....
+
+The most important output lines, in this case, are
+
+....
+Failed requests:        0
+Requests per second:    66633.75 [#/sec] (mean)
+Transfer rate:          10798.70 [Kbytes/sec] received
+....
+
+Different hardware and operating systems may lead to very different results.
+Therefore, it generally does not make sense at all to directly compare
+numbers obtained from different machines and systems.
+
+Clever users can write some external scripts to record and compare these
+numbers across different runs, so as to keep track of performance changes
+in the web server or application. Such comparison scripts must take into
+account any measurement errors and any disturbances from other processes
+running in the same system.
+
+Performance benchmark is a large topic and we gives it a more detailed
+treatment in a dedicated chapter.
 
 === HUP Reload Mode
 
