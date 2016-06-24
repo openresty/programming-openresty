@@ -49,7 +49,7 @@ sudo apt-get install expect apache2-utils
 ```
 
 You may need to build and install `weighttp` from source on Ubuntu/Debian
-yourself due to the lack of the Debian packaage.
+yourself due to the lack of the Debian package.
 
 For the Mac OS X system, on the other hand, we can use homebrew to install
 it like this:

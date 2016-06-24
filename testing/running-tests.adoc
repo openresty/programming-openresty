@@ -302,7 +302,7 @@ t/foo.t .. skipped: some reasons
 
 NOTE: It is also possible to conditionally skip a whole test file but it
 requires a little bit of Perl programming. Interested readers can try using
-a `BEGIN {}` before before the `use` statement to calculate the value of
+a `BEGIN {}` before the `use` statement to calculate the value of
 the `skip_all` option on the fly.
 
 === Test Running Order
