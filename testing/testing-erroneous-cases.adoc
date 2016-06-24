@@ -124,7 +124,7 @@ bodies in the chunked encoding.
 Timeout errors are one of the most common network issues in the real world.
 Timeout might happen due to many reasons, like packet dropping on the wire
 or on the other end, connectivity problems, and other expensive operations
-blocking the event loop. Most of applications want to ensure that the
+blocking the event loop. Most of applications want to ensure
 they have a timeout protection that prevents them from waiting for too
 long.
 
