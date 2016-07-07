@@ -25,10 +25,11 @@ each test case as hard as possible.
 To enable this benchmark testing mode, you can specify the `TEST_NGINX_BENCHMARK`
 system environment variable before running the `prove` command. For example,
 
-```bash
+[source,bash]
+----
 export TEST_NGINX_BENCHMARK='2000 2'
 prove t/foo.t
-```
+----
 
 This will run all the test cases in `t/foo.t` in benchmark mode. In particular,
 the first number, `2000` in the environment variable value indicates the
@@ -44,9 +45,10 @@ This test mode requires the `unbuffer` command-line utility from the `expect`
 package, as well as the `ab` and `weighttp` load testing tools. On Ubuntu/Debian
 systems, we can install most of the dependencies with the command
 
-```bash
+[source,bash]
+----
 sudo apt-get install expect apache2-utils
-```
+----
 
 You may need to build and install `weighttp` from source on Ubuntu/Debian
 yourself due to the lack of the Debian package.
@@ -54,9 +56,10 @@ yourself due to the lack of the Debian package.
 For the Mac OS X system, on the other hand, we can use homebrew to install
 it like this:
 
-```bash
+[source,bash]
+----
 brew install expect weighttp
-```
+----
 
 Now let's consider the following example.
 
@@ -248,12 +251,92 @@ treatment in a dedicated chapter.
 
 === HUP Reload Mode
 
+By default, the test scaffold always starts a fresh instance of the NGINX
+server right before running each individual test block and stops the server
+right after
+the checks of the current test block are all done. This ensures that there
+is no side effects among test blocks, especially those running successively.
+But
+it can also be desired to ensure everything also works fine when the NGINX
+server is just reloading its configurations without a full server restart.
+Such configuration
+reloading is usually done via sending the `HUP` signal to the master process
+of NGINX. So we usually call it "HUP reload".
+
+NOTE: On some non-UNIX-style operating systems like Microsoft Windows,
+there is no such things as signals. In such platforms, NGINX users usually
+use the `-s reload`
+command-line option of the `nginx` executable to do the same thing. It
+should be noted, however, the use of
+the `-s reload` option has one side effect that can be annoying: it loads
+the nginx configuration _twice_ instead of just once, which may incur unnecessary
+initialization overhead. Therefore, we should always use the `HUP` signal
+instead of `-s reload` whenever possible.
+
+One example of OpenResty features that behaves different upon HUP reload
+than server
+restart is the shared dictionary mechanism (https://github.com/openresty/lua-nginx-module/#lua_shared_dict[lua_shared_dict])
+that does not wipe out
+any existing data in the shared memory storage during HUP reload. When
+testing
+this feature or application code relying on this feature, it is wise to
+test how it behaves upon HUP reload. We saw in the past that some 3rd-party
+NGINX C modules dealing with shared memory, for example, have bugs across
+HUP reloads, like nasty memory leaks.
+
+`Test::Nginx` has built-in support for the HUP reload test mode, which
+can be enabled by specifying the `TEST_NGINX_USE_HUP=1` environment:
+
+[source,bash]
+----
+export TEST_NGINX_USE_HUP=1
+----
+
+Then we can run our existing test suite as usual but now HUP signal is
+used by the test scaffold to reload the NGINX configuration specified by
+different test blocks.
+The NGINX server will only be automatically shut down when the test harness
+finishes running each test file.
+
+NOTE: We can even avoid the automatic server shutdown behavior upon test
+file completion by specifying the `TEST_NGINX_NO_CLEAN=1` environment.
+See the later section
+<<no-clean,Manual Debugging Mode>> for more details.
+
+UNIX signals like `HUP` usually work asynchronously. Thus, there is a delay
+between the test scaffold finishes sending the `HUP` signal to the NGINX
+server and the NGINX server forks off a new worker process using the newly
+loaded configuration and starts accepting new connections with the new
+worker. For this reason, there is a (small) chance that the request of
+a test block is served by an NGINX worker process still using the configuration
+specified by the previous test block. Although `Test::Nginx` tries hard
+to wait as long as it can with some simple heuristics, some test blocks
+may still experience some intermittent test failures due to the mismatch
+of the NGINX configuration. Be prepared for such false positives when using
+the HUP reload testing mode.  This is also one of the reasons why the HUP
+reload mode is not the default. We hope this issue can be further improved
+in the future.
+
+Another limitation with the HUP reload mode is that HUP reloads only happen
+upon test block boundaries. There are cases where it is desired to issue
+HUP reload in the middle of a test block. We can achieve that by using
+some custom Lua code in your test block to send a `HUP` signal yourself, as in
+
+[source,lua]
+----
+local f = assert(io.open("t/servroot/logs/nginx.pid", "r"))
+local master_pid = assert(f:read())
+assert(f:close())
+assert(os.execute("kill -HUP " .. master_pid) == 0)
+----
+
 === Valgrind Mode
 
 === Naive Memory Leak Check Mode
 
 === Mockeagain Mode
 
+[[no-clean]]
 === Manual Debugging Mode
 
 === SystemTap Mode
