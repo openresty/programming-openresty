@@ -333,7 +333,7 @@ assert(os.execute("kill -HUP " .. master_pid) == 0)
 
 === Valgrind Mode
 
-One of the biggest enemy in web servers or web applications that are supposed
+One of the biggest enemies in web servers or web applications that are supposed
 to run in a 24x7 manner is memory issues. Memory issues include memory
 leaks, memory invalid reads (like reading beyond the buffer boundary),
 and memory invalid writes (like buffer overflow). In case of memory leaks,
@@ -683,6 +683,17 @@ VM always frees all its GC-managed objects.
 Understanding the weakness of the tool is as important as understanding
 its strengths. We shall see an alternative approach in the next section
 for detecting leaks in the application-level memory managers.
+
+NOTE: Google's https://github.com/google/sanitizers/wiki/AddressSanitizer[AddressSanitizer]
+tool can also be used to detect memory
+issues. As compared to Valgrind, it has the advantage of running much faster
+and can detect memory issues on the C runtime stack as well. Unfortunately
+it has its own limitations too. For example, it requires special C/C++
+compiler options to rebuild all the related C code and C libraries for
+the best results. Also, it cannot find problems in dynamically generated
+machine code (like from a Just-in-Time compiler like LuaJIT) or hand-written
+assembly code (like LuaJIT's Lua interpreter). Therefore, OpenResty developers
+use Valgrind much more often.
 
 === Naive Memory Leak Check Mode
 
