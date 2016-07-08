@@ -345,7 +345,8 @@ invalid accesses, on the other hand, can lead to process crashes (like
 segmentation faults), or worse, leading to nondeterminism in the process'
 s behavior (like giving out wrong results).
 
-Valgrind is a powerful tool for programmers to detect a wide range of memory
+http://valgrind.org/[Valgrind] is a powerful tool for programmers to detect
+a wide range of memory
 issues, including many memory leaks and many memory invalid accesses. This
 is usually for debugging lower level code like the OpenResty core (including
 the NGINX core), the Lua or LuaJIT VM, as well as those Lua libraries involved
