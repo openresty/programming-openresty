@@ -701,6 +701,182 @@ use Valgrind much more often.
 
 === Naive Memory Leak Check Mode
 
+As we have seen from the previous section, Valgrind is great at detecting
+a wide range of memory leaks and memory invalid accesses. But Valgrind
+also suffers from limitations in detecting leaks in application-level memory
+managers such as garbage collectors (GC) and memory pools, which is also
+quite common in reality. To see this, let's consider the following simple
+example that leaks in LuaJIT's GC-managed memory.
+
+[source,test-base]
+----
+=== TEST 1:
+--- config
+    location = /t {
+        content_by_lua_block {
+            package.path = "/path/to/some/lib/?.lua;" .. package.path
+            ngx.say("ok")
+        }
+    }
+--- request
+    GET /t
+--- response_body
+ok
+--- no_error_log
+[error]
+----
+
+This example demonstrates a common mistake made by many OpenResty beginners.
+The `package.path` field specifies the search paths used by the `require`
+builtin function for loading pure Lua modules. This string value is hooked
+up in the global Lua table `package` which has the same lifetime as the
+current Lua virtual machine (VM) instance. Since Lua VM instances usually
+have the same lifetime as NGINX worker processes (unless the `lua_code_cache`
+directive is turned off in `nginx.conf`), prepending a new string to the
+value of `package.path` in a request handler like `content_by_lua_block`
+apparently results in a memory leak.
+
+Unfortunately Valgrind cannot find this leak at all since the leak happens
+in the GC-managed memory inside the Lua VM because all such leaked memory
+will always get released upon GC destruction (or VM destruction) before
+the
+current process exits, which fools Valgrind to think that there is no leaks
+at all. Interested readers can try running this example with the "Valgrind
+test mode" as explained in the previous section.
+
+To address this limitation of Valgrind, `Test::Nginx::Socket` introduces
+a new test mode called "naive memory leak check mode", or just "check leak
+mode" for short. In this mode, the test scaffold performs the following
+things:
+
+1. loads the NGINX server with many of the test request specified in the
+test block, in a way similar to the "benchmark test mode" we discussed
+earlier,
+2. and at the same time, periodically polls and records the memory footprint
+of the NGINX worker process with the system command `ps`,
+3. and finally analyzes the memory usage data points collected in 2) by
+finds the slope (`k`) of a line that best fits those data points.
+
+To make use of this mode, just specify the `TEST_NGINX_CHECK_LEAK=1` environment,
+before running existing test files, as in
+
+[source,bash]
+----
+export TEST_NGINX_CHECK_LEAK=1
+prove t/a.t
+----
+
+Assuming the `t/a.t` test file contains the test block example given above,
+we should get an output similar to the following.
+
+....
+t/a.t .. TEST 1:
+LeakTest: [3740 3756 3620 3624 4180 3808 4044 4240 4272 4888 3876 3520 4516
+ 4368 5216 4796 4420 4508 4068 5336 5220 3888 4196 4544 4100 3696 5028 5080
+ 4580 3936 5236 4308 5320 4748 5464 4032 5492 4996 4588 4932 4632 6388 5228
+ 5516 4680 5348 5420 5964 5436 5128 5720 6324 5700 4948 4312 6208 5192 5268
+ 5600 4144 6556 4248 5648 6612 4044 5408 5120 5120 5740 6048 6412 5636 6488
+ 5184 6036 5436 5808 4904 4980 6772 5148 7160 6576 6724 5024 6768 7264 5540
+ 5700 5284 5244 4512 5752 6752 6868 6064 4940 5636 6388 7468]
+LeakTest: k=22.6
+t/e.t .. ok
+All tests successful.
+Files=1, Tests=3,  6 wallclock secs ( 0.01 usr  0.01 sys +  0.61 cusr  1.68 csys =  2.31 CPU)
+Result: PASS
+....
+
+The special output lines from this test mode have the prefix `LeakTest:`.
+The first such line lists all the data points for the memory footprint
+size in the unit of kilo bytes (KB), collected every 0.02 seconds. And
+the second line is the slope (`k`) of the data line that best fits these
+data points. And in this case, `k` equals to `22.6`.
+
+The slope of the line can usually serve as an indication for the speed
+of memory leaking. The larger the slope is, the faster the leak is. A 2-digit
+data line slope here is very likely an indication of memory
+leak. To be sure, we plot these data points in a graph using the `gnuplot`
+tool.
+
+image::../images/check-leak-pkg-path.png[]
+
+There are quite some fluctuations in the graph. This is due to how  garbage
+collector normally behaves. It usually allocates page-sized or even larger
+memory blocks than actually requested for performance reasons and delays
+the release of unused memory blocks because of the sweep phase or something
+else. Still, it is clear that the memory usage is going up over all.
+
+We can try enforcing a full garbage collection cycle upon the entry of
+our request handler, like this:
+
+[source,nginx]
+----
+content_by_lua_block {
+    collectgarbage()
+    package.path = "/path/to/some/lib/?.lua;" .. package.path
+    ngx.say("ok")
+}
+----
+
+This way we can ensure that there is _no_ memory garbage hanging around
+after the point we call the Lua builtin function `collectgarbage()`.
+
+Now the output looks like this:
+
+....
+t/e.t .. TEST 1:
+LeakTest: [2464 2464 2360 2464 2232 2520 2380 2536 2440 2320 2300 2464
+ 2576 2584 2540 2408 2608 2420 2596 2596 2332 2648 2660 2460 2680 2320
+ 2688 2616 2332 2628 2408 2728 2716 2380 2752 2360 2768 2376 2372 2376
+ 2732 2800 2808 2816 2464 2396 2668 2688 2848 2672 2412 2416 2536 2420
+ 2424 2632 2904 2668 2912 2564 2724 2448 2932 2944 2856 2960 2616 2672
+ 2976 2620 2984 2600 2808 2980 3004 2996 3236 3012 2724 3168 3072 3536
+ 3260 3412 3028 2700 2480 3188 2808 3536 2640 3056 2764 3052 3440 3308
+ 3064 2680 2828 3372]
+LeakTest: k=7.4
+t/e.t .. ok
+All tests successful.
+Files=1, Tests=3,  6 wallclock secs ( 0.02 usr  0.00 sys +  0.62 cusr  1.75 csys =  2.39 CPU)
+Result: PASS
+....
+
+We can see this time, the slope of the best-fitting line is much smaller,
+but still much larger than 0.
+
+The line graph is now much smoother, as expected:
+
+image::../images/check-leak-pkg-path-gc.png[]
+
+And we can see that the line is still going upward relatively steadily
+over time.
+
+Large fluctuations and variations in the memory footprint may create noises
+in our data samples and even result in false positives. We already saw
+how big fluctuations may result in large data-fitting line slopes. It
+is usually a
+good idea to enforce full garbage collection cycles frequently to reduce
+such noises at least in GC-managed memory. The `collectgarbage()` function,
+however, is quite expensive in terms of CPU resources and may hurt the
+over-all performance very badly. Ensure you do not call it often (like
+in every request) in the "benchmark test mode" introduced above or even
+in production applications.
+
+In reality, this brute-force "check leak" test mode has helped catching
+quite a lot of real memory leaks in OpenResty's test suites over the years.
+Most of those leaks made their way around the Valgrind test mode since
+they happened in GC-managed memory or NGINX's memory pools.
+
+NOTE: The NGINX no-pool patch mentioned in the previous section does not help
+here since all the leaked memory blocks in the pool still get released
+before the process exits.
+
+Nevertheless, there exists one big drawback of this test mode. Unlike Valgrind,
+it cannot give any detailed information about the locations where leaks
+(may) happen. All it reports are just data samples and other metrics that
+verify just the _existence_ of a leak (at least to some extend). We shall
+see in a later chapter how we can use the "memory leak flame graphs" to
+overcome this limitation even for leaks and big swings in GC-managed or
+pool-managed memory.
+
 === Mockeagain Mode
 
 [[no-clean]]
