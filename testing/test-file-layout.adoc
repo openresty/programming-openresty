@@ -276,7 +276,7 @@ by the right-hand-side. The resulting 4096-byte Perl string after evaluating
 this expression dictated by the `eval` filter will be used as the final
 section value for comparison with the actual response body data. It is
 obvious that use of the `eval` filter and a Perl expression here is much
-more readable and manageable by directly pasting that 4096-byte string
+more readable and manageable than directly pasting that 4096-byte string
 in the test block.
 
 As with data sections, the user can also define her own filters, as we

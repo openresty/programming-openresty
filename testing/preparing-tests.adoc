@@ -442,7 +442,7 @@ This is a great way to find the details of the error quickly by just looking
 at the test report.
 
 Like `error_log`, this section also supports Perl array values and Perl
-regex values though the `eval` filter.
+regex values through the `eval` filter.
 
 ==== Grep Tests
 
