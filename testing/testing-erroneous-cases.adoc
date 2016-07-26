@@ -395,7 +395,7 @@ BEGIN {
 
 The `BEGIN {}` block is required here because it runs before Perl loads
 any modules, especially `Test::Nginx::Socket`, in which we want these environments
-to take affect.
+to take effect.
 
 It is a bad idea, however, to hard-code the path of the `mockeagain.so`
 file in the test file itself since different test runners might put `mockeagain`
