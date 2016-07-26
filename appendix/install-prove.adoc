@@ -1,0 +1,40 @@
+== Install Prove
+
+Standard Perl distribution with version older than `5.10` doesn't contain `Prove`.
+So if happen to deal with such system, you have to install `Prove`
+manully.
+
+We will give a tutorial to manually install `Prove` on `CentOS 6.5`.
+
+== Tutorial
+
+`Perl` use link:http://www.cpan.org[CPAN] to manage package, `CPAN` isn't shipped with `Perl` 
+older than `5.10`, so install `CPAN` first.
+
+[source,console]
+----
+➜  ~ sudo yum install perl-CPAN
+----
+
+Once `CPAN` installed, use `CPAN` to get `Prove`.
+
+[source,console]
+----
+➜  ~ cpan
+cpan shell -- CPAN exploration and modules installation (v1.9402)
+Enter 'h' for help.
+cpan[1]> get App:Prove
+...
+CPAN: File::Temp loaded ok (v0.22)
+
+cpan[2]> force install App:Prove
+...
+----
+
+And now you can run `Prove`
+[source,console]
+----
+➜  ~ which prove
+/usr/local/bin/prove
+----
+

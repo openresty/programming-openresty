@@ -4,7 +4,7 @@ Like most Perl-based testing frameworks, `Test:Nginx` relies on Perl's
 `prove`
 command-line utility to run the test files. The `prove` utility is usually
 shipped with the standard perl distribution so we should already have it
-when we have `perl` installed.
+when we have `perl` installed, reference link:../appendix/install-prove.adoc[here] if you don't.
 
 `Test::Nginx` always invokes a real NGINX server and a real socket client
 to run the tests. It automatically uses the `nginx` program found in the
