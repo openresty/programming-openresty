@@ -11,3 +11,5 @@
 .. link:testing/testing-erroneous-cases.adoc[Testing Erroneous Cases]
 .. link:testing/test-modes.adoc[Test Modes]
 .. link:testing/advanced-topics.adoc[Advanced Topics]
+. link:appendix/README.adoc[Appendix]
+.. link:appendix/install-prove.adoc[Install Prove]
