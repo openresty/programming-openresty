@@ -1,0 +1,21 @@
+== Install Prove
+
+Standard Perl distribution with version older than `5.10` doesn't contain `Prove`.
+So if happen to deal with such system, you have to install `Prove` yourself.
+
+== CentOS/Redhat
+
+[source,console]
+----
+➜  ~ sudo yum install perl-Test-Harness
+----
+
+== Debian/Ubuntu
+
+In `Ubuntu 12.04`, there is only `perl-base`, but `Prove` belong to `perl`
+
+[source,console]
+----
+➜  ~ sudo apt-get install perl
+----
+
