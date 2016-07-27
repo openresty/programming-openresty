@@ -1,6 +1,6 @@
 == Install Prove
 
-Standard Perl distribution with version older than `5.14` doesn't contain `Prove`.
+Standard Perl distribution with version older than `5.10` doesn't contain `Prove`.
 So if happen to deal with such system, you have to install `Prove` yourself.
 
 == CentOS/Redhat
