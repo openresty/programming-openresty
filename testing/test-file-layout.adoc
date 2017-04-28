@@ -103,7 +103,7 @@ to identify the test block in the test report when test failures happen.
 By convention we put a `TEST N:` prefix in this title, for instance, `TEST
 3: test the simplest form`. Don't worry about maintaining the test ordinal
 numbers in these titles yourself, we will introduce a command-line utility
-called link:https://raw.githubusercontent.com/agentzh/old-openresty/master/bin/reindex[reindex]
+called link:https://raw.githubusercontent.com/openresty/openresty-devel-utils/master/reindex[reindex]
 in a later section that can automatically update the ordinal numbers in
 the block titles for you.
 
