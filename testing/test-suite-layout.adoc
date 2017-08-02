@@ -2,10 +2,10 @@
 
 Projects using `Test::Nginx` to drive their test suites usually have a
 common directory layout and common test file name patterns to organize
-their tests. This makes the user easy
-to reason about the location of the test suite in a project source tree
-and the usage of the tests. It is not really required, however, to use
-this common convention; it is just highly recommended.
+their tests. This makes it easy for the user to reason about the
+location of the test suite in a project source tree and the usage of
+the tests. It is not really required, however, to use this common
+convention; it is just highly recommended.
 
 By convention, such projects have a `t/` directory at the root of their
 source tree where test files reside in. Each test file contains test cases
