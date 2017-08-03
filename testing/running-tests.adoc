@@ -61,15 +61,16 @@ way.
 === Running A Single File
 
 If you want to run a single test file, say, `t/foo.t`, then all you need
-to do is just typing the following command in your terminal.
+to do is just to type the following command in your terminal.
 
 [source,bash]
 ----
 prove t/foo.t
 ----
 
-Here inside `t/foo.t` we employs the simple test file example presented
-in the previous section. We repeat the content below for the reader's convenience.
+Here inside `t/foo.t` we employ the simple test file example presented
+in the previous section. We repeat the content below for the reader's
+convenience.
 
 [source,test-base]
 .t/foo.t
@@ -171,7 +172,7 @@ one in a later section.
 
 === Running Multiple Files
 
-Running multiple test files are straightforward; just specify the file
+Running multiple test files is straightforward; just specify the file
 names on the `prove` command line, as in
 
 [source,bash]
@@ -187,10 +188,9 @@ then using a shell wildcard can be handy:
 prove -v t/*.t
 ----
 
-In case that you have sub-directories under `t/`, you can specify the `-r`
-option to ask `prove` to recursively traverse the while directory tree
-rooted
-at `t/` to find test files:
+In the case that you have sub-directories under `t/`, you can specify
+the `-r` option to ask `prove` to recursively traverse the while directory
+tree rooted at `t/` to find test files:
 
 [source,bash]
 ----
