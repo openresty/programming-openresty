@@ -21,6 +21,11 @@ while (<$in>) {
         next;
     }
 
+    if (/^\s*```+/) {
+        $skipping = !$skipping;
+        next;
+    }
+
     if ($skipping) {
         next;
     }
@@ -29,12 +34,14 @@ while (<$in>) {
         next;
     }
 
+    next if /^\[\^\w+\]:/;
+
     my $orig = $_;
 
     if (/\p{Han}/) {
         s/.{39}.*?(?:[ \t”“，：。！？、]|\p{Han})/$&\n/gso;
     } else {
-        s/.{70}.*?(?:[ \t'"?”“，：。！？、]|[,.;!]\s)/$&\n/gso;
+        s/.{75}.*?(?:[ \t'"?”“，：。！？、]|[,.;!]\s)/$&\n/gso;
     }
 
     s/\s*\n\s*/\n/gms;
@@ -55,4 +62,3 @@ if ($changes && $res) {
     close $out;
     warn "$infile wrote.\n";
 }
-
