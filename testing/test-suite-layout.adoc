@@ -44,7 +44,7 @@ Although `.t` files are Perl scripts per se, they usually do not have much
 Perl code at all. Instead, all of the test cases are declared as cleanly
 formatted "data" in these `.t` files.
 
-NOTE: The test suite layout convention we use here are also used by the
+NOTE: The test suite layout convention we use here has also been used by the
 Perl community for many years. Because `Test::Nginx` is written in Perl
 and reuses Perl's testing toolchain, it makes sense for us to simply follow
 that convention in the NGINX and OpenResty world as well.

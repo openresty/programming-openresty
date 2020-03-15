@@ -13,8 +13,8 @@ by the following special line
 __DATA__
 ....
 
-The `perl` interpreter or the `prove` utility stop interpreting the file
-content as Perl source code until they see this special line. Everything
+The `perl` interpreter or the `prove` utility stops interpreting the file
+content as Perl source code once they see this special line. Everything
 after this line is treated as *data* in plain text that is reachable
 by the Perl code above this line. The most interesting part of each `.t`
 test file is the stuff after this line, i.e., the data part.
@@ -43,7 +43,7 @@ run_tests();
 The first line is just loading the Perl module (or class), `Test::Nginx::Socket`
 and passing the option `'no_plan'` to it to disable test plans (we will
 talk more about test plans in later chapters and we do not bother worrying
-about it here). `Test::Nginx::Socket` is one of the most popular class
+about it here). `Test::Nginx::Socket` is one of the most popular classes
 in the `Test::Nginx` test framework. The second line just calls the `run_tests`
 Perl function imported automatically from the `Test::Nginx::Socket` module
 to run all the test cases defined in the data part of the test file (i.e.,
@@ -70,7 +70,7 @@ to express test cases so that the user does not use Perl or any other general-pu
 languages to present the tests themselves. This special specification format
 is an instance of Domain-Specific Languages (DSL) where the "domain" is
 defined as testing code running upon or inside NGINX. Use of a DSL to present
-test cases open the door of presenting the test cases as _data_ instead
+test cases opens the door for presenting the test cases as _data_ instead
 of code. This is also why `Test::Nginx` is a data-driven testing framework.
 
 The test case specification in the data part is composed by a series of
@@ -96,7 +96,7 @@ value3
 ==== Block Titles
 
 As we can see, each test block starts with a title line prefixed by three
-equal sign (`===`). It is important to _avoid_ any leading spaces at the
+equal signs (`===`). It is important to _avoid_ any leading spaces at the
 beginning of the line. The title is mandatory and is important to describe
 the intention of the current test case in the most concise form, and also
 to identify the test block in the test report when test failures happen.
@@ -214,9 +214,9 @@ handy for preparing test cases for future features without introducing
 any expected test failures. We will visit more such "control sections"
 in later sections.
 
-We shall see, in a later section, that the user can define her own data
-sections or extending existing ones by writing a little bit of custom Perl
-code to satisfy her more complicated testing requirements.
+We shall see, in a later section, that the user can define their own data
+sections or extend existing ones by writing a little bit of custom Perl
+code to satisfy more complicated testing requirements.
 
 ==== Section Filters
 
@@ -257,9 +257,9 @@ exclude the trailing new-line in the multi-line form, we can employ the
 
 Now it has exactly the same semantics as the previous one-line form.
 
-Some filters have more dramatic effect on the section values. For instance,
+Some filters have a more dramatic effect on the section values. For instance,
 the `eval` filter evaluates the section value as arbitrary Perl code, and
-the Perl value resulted from the execution will be used as the final section
+the Perl value resulting from the execution will be used as the final section
 value. The following section demonstrates using the `eval` filter to produce
 4096 a's:
 
@@ -279,7 +279,7 @@ obvious that use of the `eval` filter and a Perl expression here is much
 more readable and manageable than directly pasting that 4096-byte string
 in the test block.
 
-As with data sections, the user can also define her own filters, as we
+As with data sections, the user can also define their own filters, as we
 shall see in a later section.
 
 === A Complete Example
