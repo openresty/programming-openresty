@@ -96,7 +96,7 @@ value3
 ==== Block Titles
 
 As we can see, each test block starts with a title line prefixed by three
-equal sign (`===`). It is important to _avoid_ any leading spaces at the
+equal signs (`===`). It is important to _avoid_ any leading spaces at the
 beginning of the line. The title is mandatory and is important to describe
 the intention of the current test case in the most concise form, and also
 to identify the test block in the test report when test failures happen.
