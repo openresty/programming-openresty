@@ -14,7 +14,7 @@ is just a dialect of the more general testing language provided by the
 link:https://metacpan.org/pod/distribution/Test-Base/lib/Test/Base.pod[Test::Base]
 testing module in the Perl world. In fact, `Test::Nginx` is just a subclass
 of `Test::Base` in the sense of object-oriented programming. This means
-that all the features offered by `Test::Base` is available in `Test::Nginx`
+that all the features offered by `Test::Base` are available in `Test::Nginx`
 and `Test::Nginx` just provides handy primitives and notations that simplify
 testing in the NGINX and OpenResty context. The core idea of `Test::Base`
 is so useful that we have been using testing scaffolds based on `Test::Base`
