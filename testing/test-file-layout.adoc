@@ -14,7 +14,7 @@ __DATA__
 ....
 
 The `perl` interpreter or the `prove` utility stop interpreting the file
-content as Perl source code until they see this special line. Everything
+content as Perl source code once they see this special line. Everything
 after this line is treated as *data* in plain text that is reachable
 by the Perl code above this line. The most interesting part of each `.t`
 test file is the stuff after this line, i.e., the data part.
