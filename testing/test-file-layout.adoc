@@ -43,7 +43,7 @@ run_tests();
 The first line is just loading the Perl module (or class), `Test::Nginx::Socket`
 and passing the option `'no_plan'` to it to disable test plans (we will
 talk more about test plans in later chapters and we do not bother worrying
-about it here). `Test::Nginx::Socket` is one of the most popular class
+about it here). `Test::Nginx::Socket` is one of the most popular classes
 in the `Test::Nginx` test framework. The second line just calls the `run_tests`
 Perl function imported automatically from the `Test::Nginx::Socket` module
 to run all the test cases defined in the data part of the test file (i.e.,
