@@ -70,7 +70,7 @@ to express test cases so that the user does not use Perl or any other general-pu
 languages to present the tests themselves. This special specification format
 is an instance of Domain-Specific Languages (DSL) where the "domain" is
 defined as testing code running upon or inside NGINX. Use of a DSL to present
-test cases open the door of presenting the test cases as _data_ instead
+test cases opens the door for presenting the test cases as _data_ instead
 of code. This is also why `Test::Nginx` is a data-driven testing framework.
 
 The test case specification in the data part is composed by a series of
