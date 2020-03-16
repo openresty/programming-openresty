@@ -214,9 +214,9 @@ handy for preparing test cases for future features without introducing
 any expected test failures. We will visit more such "control sections"
 in later sections.
 
-We shall see, in a later section, that the user can define her own data
-sections or extending existing ones by writing a little bit of custom Perl
-code to satisfy her more complicated testing requirements.
+We shall see, in a later section, that the user can define their own data
+sections or extend existing ones by writing a little bit of custom Perl
+code to satisfy more complicated testing requirements.
 
 ==== Section Filters
 
@@ -279,7 +279,7 @@ obvious that use of the `eval` filter and a Perl expression here is much
 more readable and manageable than directly pasting that 4096-byte string
 in the test block.
 
-As with data sections, the user can also define her own filters, as we
+As with data sections, the user can also define their own filters, as we
 shall see in a later section.
 
 === A Complete Example
