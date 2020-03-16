@@ -257,9 +257,9 @@ exclude the trailing new-line in the multi-line form, we can employ the
 
 Now it has exactly the same semantics as the previous one-line form.
 
-Some filters have more dramatic effect on the section values. For instance,
+Some filters have a more dramatic effect on the section values. For instance,
 the `eval` filter evaluates the section value as arbitrary Perl code, and
-the Perl value resulted from the execution will be used as the final section
+the Perl value resulting from the execution will be used as the final section
 value. The following section demonstrates using the `eval` filter to produce
 4096 a's:
 
