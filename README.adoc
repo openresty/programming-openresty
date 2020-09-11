@@ -9,7 +9,7 @@ Commons Attribution Non Commercial Share Alike 3.0 license]. You can download
 or browse the rendered book in various different formats on the GitBook
 website below.
 
-https://www.gitbook.com/book/openresty/programming-openresty/
+https://openresty.gitbooks.io/programming-openresty/content/
 
 The latest source of the book can be found in the following GitHub repository:
 
